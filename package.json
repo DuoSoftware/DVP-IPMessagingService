@@ -1,0 +1,31 @@
+{
+  "name": "dvp-ipmessagingservice",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DuoSoftware/DVP-IPMessagingService.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DuoSoftware/DVP-IPMessagingService/issues"
+  },
+  "homepage": "https://github.com/DuoSoftware/DVP-IPMessagingService#readme",
+  "dependencies": {
+    "config": "^1.24.0",
+    "dvp-common": "^0.6.5",
+    "dvp-mongomodels": "^4.2.3",
+    "mongoose": "^4.7.6",
+    "node-uuid": "^1.4.7",
+    "redis": "^2.6.3",
+    "restify": "^4.3.0",
+    "socket.io": "^1.7.2",
+    "socket.io-redis": "^3.0.0",
+    "socketio-jwt": "^4.5.0"
+  }
+}
