@@ -136,7 +136,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     socket.on('message',function(data){
 
-        if(data && data.to && data.message && message.type &&  data.id) {
+        if(data && data.to && data.message && data.type &&  data.id) {
 
             logger.info(data);
             //io.to(socket.decoded_token.iss).emit('echo', data);
@@ -148,7 +148,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
             var message = PersonalMessage({
 
-                type: message.type,
+                type: data.type,
                 created_at: Date.now(),
                 updated_at: Date.now(),
                 status: 'pending',

@@ -116,7 +116,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
     socket.on('message', function (data) {
 
-        if (data && data.message && socket.agent) {
+        if (data && data.message && socket.agent && data.type) {
 
             logger.info(data);
             //io.to(socket.decoded_token.iss).emit('echo', data);
