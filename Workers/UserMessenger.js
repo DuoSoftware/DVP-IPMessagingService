@@ -126,7 +126,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         }else{
 
             if(obj) {
-                io.to(socket.decoded_token.iss).emit("status", obj);
+                io.to(socket.decoded_token.iss).emit("status", JSON.parse(obj));
             }else{
 
                 logger.error('No users status found in redis');
@@ -195,7 +195,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
             var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
             redisClient.set(util.format("%s:messaging:status", socket.decoded_token.iss), data.presence, redis.print);
-            io.to(statusGroup).emit("status", data.presence);
+            var statusObj = {};
+            statusObj[socket.decoded_token.iss] = data.presence;
+            io.to(statusGroup).emit("status", statusObj);
 
             var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
             redisClient.hset(onlineUsers, socket.decoded_token.iss, data.presence, redis.print);
@@ -299,7 +301,8 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         io.to(statusGroup).emit("status", 'offline');
 
         var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
-        redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
+        //redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
+        redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
 
         redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
     });
