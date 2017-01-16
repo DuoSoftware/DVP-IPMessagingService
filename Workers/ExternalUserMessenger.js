@@ -184,9 +184,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
     socket.on('seen', function (data) {
 
-        if (data && socket.agent && data.uuid) {
+        if (data && socket.agent && data.id) {
             io.to(socket.agent).emit("seen", data);
-            UpdateRead(data.uuid);
+            UpdateRead(data.id);
         }
     });
 

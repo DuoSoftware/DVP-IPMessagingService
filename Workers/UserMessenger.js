@@ -279,9 +279,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     socket.on('seen',function(data){
 
-        if(data && data.to && data.uuid) {
+        if(data && data.to && data.id) {
             io.to(data.to).emit("seen", data);
-            UpdateRead(data.uuid);
+            UpdateRead(data.id);
         }
     });
 
