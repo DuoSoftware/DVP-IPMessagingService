@@ -245,6 +245,13 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     });
 
+    socket.on('typingstoped',function(data){
+
+        if(data && data.to)
+            io.to(data.to).emit("typingstoped", data);
+
+    });
+
     socket.on('request',function(data){
 
         switch(data.request){

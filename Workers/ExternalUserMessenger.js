@@ -181,6 +181,15 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             io.to(socket.agent).emit("typing", data);
 
     });
+    socket.on('typingstoped', function (data) {
+
+
+        if (data && socket.agent)
+            io.to(socket.agent).emit("typingstoped", data);
+
+    });
+
+
 
     socket.on('seen', function (data) {
 
