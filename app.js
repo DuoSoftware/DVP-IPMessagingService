@@ -31,15 +31,15 @@ mongoose.connection.once('open', function() {
 mongoose.connect(connectionstring);
 
 
-var messanger = config.Host.messenger;
+//var messanger = config.Host.messenger;
 
 
-if(messanger == 'user'){
+//if(messanger == 'user'){
 
-    var messanger = require('./Workers/UserMessenger');
+    var usermessanger = require('./Workers/UserMessenger');
 
-}else{
+//}else{
 
-    var messanger = require('./Workers/ExternalUserMessenger');
-}
+    var clientmessanger = require('./Workers/ExternalUserMessenger');
+//}
 

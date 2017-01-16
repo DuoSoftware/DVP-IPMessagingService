@@ -41,7 +41,16 @@ module.exports = {
         "ip": "LB_FRONTEND",
         "port": "LB_PORT"
 
-    }
+    },
+
+    "Services": {
+
+        "interactionurl": "SYS_INTERACTION_HOST",
+        "interactionport": "SYS_INTERACTION_PORT",
+        "interactionversion":"SYS_INTERACTION_VERSION"
+
+
+    },
 };
 
 //NODE_CONFIG_DIR

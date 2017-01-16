@@ -18,14 +18,16 @@
   "homepage": "https://github.com/DuoSoftware/DVP-IPMessagingService#readme",
   "dependencies": {
     "config": "^1.24.0",
-    "dvp-common": "^0.6.5",
+    "dvp-common": "^0.6.6",
     "dvp-mongomodels": "^4.2.3",
     "mongoose": "^4.7.6",
     "node-uuid": "^1.4.7",
     "redis": "^2.6.3",
+    "request": "^2.79.0",
     "restify": "^4.3.0",
     "socket.io": "^1.7.2",
     "socket.io-redis": "^3.0.0",
-    "socketio-jwt": "^4.5.0"
+    "socketio-jwt": "^4.5.0",
+    "validator": "^6.2.1"
   }
 }

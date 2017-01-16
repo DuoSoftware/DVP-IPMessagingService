@@ -1,16 +1,36 @@
 /**
- * Created by Sukitha on 1/10/2017.
+ * Created by Sukitha on 1/13/2017.
  */
 
 
-var socket = require('socket.io-client')('http://localhost:3333');
+
+/**
+ * Created by Sukitha on 1/10/2017.
+ */
+
+var jwt = require('jsonwebtoken');
+var socket = require('socket.io-client')('http://localhost:3334');
 var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
+var uuid = require('node-uuid');
+var fs = require('fs')
+
 
 socket.on('connect', function(){
 
     logger.info("connected");
 
-    socket.emit('authenticate', {token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdWtpdGhhIiwianRpIjoiMTdmZTE4M2QtM2QyNC00NjQwLTg1NTgtNWFkNGQ5YzVlMzE1Iiwic3ViIjoiNTZhOWU3NTlmYjA3MTkwN2EwMDAwMDAxMjVkOWU4MGI1YzdjNGY5ODQ2NmY5MjExNzk2ZWJmNDMiLCJleHAiOjE4OTMzMDI3NTMsInRlbmFudCI6MSwiY29tcGFueSI6MTAzLCJzY29wZSI6W3sicmVzb3VyY2UiOiJhbGwiLCJhY3Rpb25zIjoiYWxsIn1dLCJpYXQiOjE0NjEyOTkxNTN9.PNiDQ9z-966GZlQQGaX23-VdBRi1UR0gA4nfehgi19c"});
+
+    var token = jwt.sign({
+        "jti": uuid.v1(),
+        "iss": "singer",
+        "tenant": 1,
+        "company": 103,
+        "sub": "1234567890",
+        "name": "John Doe",
+        "admin": true
+    }, 'abcdefgh');
+
+    socket.emit('authenticate', {token: token});
 
 });
 
@@ -40,6 +60,22 @@ socket.on('status', function(data){
     logger.info(data);
 });
 
+socket.on('agent', function(data){
+
+    logger.info(data);
+
+
+    fs.readFile('D:\\Projects\\DVP\\DVP-IPMessagingService\\Workers\\3affbf0.jpg', 'utf8', function (err,data) {
+        if (err) {
+            logger.error(err);
+        }else {
+            socket.emit('message', {type: 'file', message: '3affbf0.jpg', to: 'sukitha', content:data});
+        }
+    });
+
+
+});
+
 socket.on('message', function(data){
 
     logger.info(data);
@@ -63,9 +99,3 @@ socket.on('disconnect', function(data){
     logger.info("disconnected");
 });
 
-socket.on('client', function(data){
-
-    logger.info(data);
-
-    socket.emit('accept',{to: data.jti});
-});

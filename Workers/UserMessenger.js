@@ -5,7 +5,7 @@
 var util = require('util');
 var config = require('config');
 var uuid = require('node-uuid');
-var port = config.Host.port || 3000;
+var port = config.Host.internalport || 3000;
 
 ////////////////////////////////redis////////////////////////////////////////
 var redisip = config.Redis.ip;
@@ -21,7 +21,7 @@ var adapter = require('socket.io-redis');
 var socketioJwt =  require("socketio-jwt");
 var secret = require('dvp-common/Authentication/Secret.js');
 var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
-
+var User = require('dvp-mongomodels/model/User');
 var PersonalMessage = require('dvp-mongomodels/model/Room').PersonalMessage;
 var Room = require('dvp-mongomodels/model/Room').Room;
 var Message = require('dvp-mongomodels/model/Room').Message
@@ -136,19 +136,19 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     socket.on('message',function(data){
 
-        if(data && data.to && data.message) {
+        if(data && data.to && data.message && message.type &&  data.id) {
 
             logger.info(data);
             //io.to(socket.decoded_token.iss).emit('echo', data);
             data.from = socket.decoded_token.iss;
             data.time = Date.now();
-            var id = uuid.v1();
+            var id = data.id;//uuid.v1();
 
             var toRedisKey = util.format("%s:messaging:status", data.to);
 
             var message = PersonalMessage({
 
-                type: 'text',
+                type: message.type,
                 created_at: Date.now(),
                 updated_at: Date.now(),
                 status: 'pending',
@@ -161,32 +161,24 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
             io.sockets.adapter.clients( [data.to], function (err, clients) {
                 if (err) {
+                    socket.emit('event', {event: 'message_status', id: id, data: 'nouser'});
                     logger.error('No user available in room',err);
                     SaveMessage(message);
 
                 }else{
-                    if(Array.isArray(clients) && clients.length > 0){
-
-                        redisClient.get(toRedisKey, function (errGet, resGet) {
-                            if (errGet) {
-                                logger.error('No user status found in redis',errGet);
-                            }else{
-
-                                if(!resGet){
-                                    logger.error('No user status found in redis',errGet);
-                                }else{
+                    if(Array.isArray(clients) && clients.length > 0) {
 
 
-                                    data.id = id;
-                                    io.to(data.to).emit("message", data);
-                                    message.status = 'delivered';
-                                }
-                            }
-                            SaveMessage(message);
-                        });
+                        data.id = id;
+                        io.to(data.to).emit("message", data);
+                        socket.emit('event', {event: 'message_status', id: id, data: 'delivered'});
+                        message.status = 'delivered';
+
+                        SaveMessage(message);
 
                     }else{
 
+                        socket.emit('event', {event: 'message_status', id: id, data: 'nouser'});
                         logger.error('No user available in room');
                         SaveMessage(message);
                     }
@@ -215,8 +207,38 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     });
 
-    socket.on('typing',function(data){
+    socket.on('accept',function(data) {
 
+        if (data && data.to) {
+
+
+            User.findOne({
+                    company: socket.decoded_token.company,
+                    tenant: socket.decoded_token.tenant,
+                    username: socket.decoded_token.iss
+                })
+                .select("username name avatar")
+                .exec(function (err, user) {
+                    if (err) {
+
+
+                    } else {
+
+                        if (user) {
+
+                            io.to(data.to).emit("agent", {username: user.username, name : user.name, avatar: user.avatar});
+
+                        } else {
+
+                        }
+                    }
+
+                });
+        }
+
+    });
+
+    socket.on('typing',function(data){
 
         if(data && data.to)
             io.to(data.to).emit("typing", data);
@@ -249,7 +271,11 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     });
 
-    socket.on('event',function(data){});
+    socket.on('event',function(data){
+
+        logger.info(data);
+
+    });
 
     socket.on('seen',function(data){
 
