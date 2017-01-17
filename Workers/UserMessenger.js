@@ -69,13 +69,6 @@ var SaveMessage = function(message){
 };
 
 
-var GetOldMessages = function(from, to, id){
-
-    PersonalMessage.findOne({from:from, to: to, uuid: id}, function(){
-
-    })
-
-}
 
 var UpdateRead = function(uuid){
 
@@ -120,7 +113,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
             if (!resGet) {
 
-                logger.error('No user status found in redis', errGet);
+                logger.error('No user status found in redis');
             } else {
 
                 io.to(statusGroup).emit("status", resGet);
@@ -135,7 +128,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         }else{
 
             if(obj) {
-                io.to(socket.decoded_token.iss).emit("status", JSON.parse(obj));
+                io.to(socket.decoded_token.iss).emit("status", obj);
             }else{
 
                 logger.error('No users status found in redis');
@@ -278,10 +271,11 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                     } else {
 
                         if (obj) {
-                            io.to(socket.decoded_token.iss).emit("status", obj);
+                            socket.emit("status", obj);
                         } else {
 
                             logger.error('No users status found in redis');
+                            socket.emit('error',{action:'allstatus', message: 'no data found'});
                         }
                     }
                 });
@@ -289,11 +283,80 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                 break;
             case 'oldmessages':
 
+                var from = data.from;
+                var to = data.to;
+                var id = data.uuid;
+                PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
+
+                    if (obj) {
+
+                        PersonalMessage.find({
+                            created_at: {$lt: obj.created_at},
+                            $or: [{from: from, to: to}, {from: to, to: from}]
+                        }).sort({created_at: -1}).limit(10)
+                            .exec(function (err, oldmessages) {
+
+                                if (oldmessages) {
+                                    socket.emit("oldmessages", oldmessages);
+                                }else{
+
+                                    logger.error('No old message found');
+                                    socket.emit('error',{action:'oldmessages', data:data ,message: 'no data found'});
+                                }
+                            })
+                    }
+                });
+
                 break;
 
             case 'newmessages':
 
+                var from = data.from;
+                var to = data.to;
+                var id = data.uuid;
+                PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
+
+                    if (obj) {
+
+                        PersonalMessage.find({
+                            created_at: {$gt: obj.created_at},
+                            $or: [{from: from, to: to}, {from: to, to: from}]
+                        }).sort({created_at: 1}).limit(10)
+                            .exec(function (err, newmessages) {
+
+                                if (data) {
+                                    io.to(socket.decoded_token.iss).emit("newmessages", newmessages);
+                                }else{
+                                    logger.error('No new message found');
+                                    socket.emit('error',{action:'newmessages', data:data ,message: 'no data found'});
+                                }
+                            })
+                    }
+                });
+
                 break;
+
+
+            case 'latestmessages':
+
+                var from = data.from;
+                //var id = data.uuid;
+
+                PersonalMessage.find({
+                    $or: [{from: from}, {to: from}]
+                }).sort({created_at: -1}).limit(10)
+                    .exec(function (err, latestmessages) {
+
+                        if (latestmessages && Array.isArray(latestmessages)) {
+                            io.to(socket.decoded_token.iss).emit("latestmessages", {from:data.from, messages:latestmessages.reverse()});
+                        }else{
+                            logger.error('No new message found');
+                            socket.emit('error',{action:'latestmessages', data:data ,message: 'no data found'});
+                        }
+                    });
+
+                break;
+
         }
 
     });
