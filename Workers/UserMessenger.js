@@ -68,6 +68,15 @@ var SaveMessage = function(message){
     });
 };
 
+
+var GetOldMessages = function(from, to, id){
+
+    PersonalMessage.findOne({from:from, to: to, uuid: id}, function(){
+
+    })
+
+}
+
 var UpdateRead = function(uuid){
 
     PersonalMessage.findOneAndUpdate({uuid:uuid},{status:'seen'},function (err, _message) {
@@ -228,7 +237,11 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                         if (user) {
 
-                            io.to(data.to).emit("agent", {username: user.username, name : user.name, avatar: user.avatar});
+                            io.to(data.to).emit("agent", {
+                                username: user.username,
+                                name: user.name,
+                                avatar: user.avatar
+                            });
 
                         } else {
 
@@ -256,17 +269,17 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     socket.on('request',function(data){
 
-        switch(data.request){
+        switch(data.request) {
             case 'allstatus':
 
                 redisClient.hgetall(onlineUsers, function (err, obj) {
-                    if(err){
+                    if (err) {
                         logger.error('No users status found in redis', err);
-                    }else{
+                    } else {
 
-                        if(obj) {
+                        if (obj) {
                             io.to(socket.decoded_token.iss).emit("status", obj);
-                        }else{
+                        } else {
 
                             logger.error('No users status found in redis');
                         }
@@ -274,8 +287,13 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                 });
 
                 break;
+            case 'oldmessages':
 
+                break;
 
+            case 'newmessages':
+
+                break;
         }
 
     });
