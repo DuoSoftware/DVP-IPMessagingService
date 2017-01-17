@@ -40,7 +40,7 @@ socket.on('event', function(data){
 socket.on('status', function(data){
 
     logger.info(data);
-    socket.emit('request',{request:'oldmessages', from:'John Doe', to: 'sukitha', uuid: '949f5e50-da50-11e6-a30d-5b0aa8552477'});
+    socket.emit('request',{request:'latestmessages', from:'John Doe', to: 'sukitha', uuid: '949f5e50-da50-11e6-a30d-5b0aa8552477'});
 
 });
 
@@ -56,6 +56,12 @@ socket.on('seen', function(data){
 
     logger.info(data);
 });
+
+socket.on('latestmessages', function(data){
+
+    logger.info(data);
+});
+
 
 socket.on('typing', function(data){
 

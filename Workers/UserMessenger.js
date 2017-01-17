@@ -283,16 +283,19 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
             case 'oldmessages':
 
                 var from = data.from;
-                var to= data.to;
-                var id= data.uuid;
-                PersonalMessage.findOne({from:from, to: to, uuid: id}, function(err, obj){
+                var to = data.to;
+                var id = data.uuid;
+                PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
 
-                    if(obj){
+                    if (obj) {
 
-                        PersonalMessage.find({created_at: { $lt: obj.created_at }, $or: [ { from: from, to: to}, { from:to, to:from} ] }).sort({created_at: -1}).limit(10)
-                            .exec(function(err,oldmessages){
+                        PersonalMessage.find({
+                            created_at: {$lt: obj.created_at},
+                            $or: [{from: from, to: to}, {from: to, to: from}]
+                        }).sort({created_at: -1}).limit(10)
+                            .exec(function (err, oldmessages) {
 
-                                if(oldmessages){
+                                if (oldmessages) {
                                     io.to(socket.decoded_token.iss).emit("oldmessages", oldmessages);
                                 }
                             })
@@ -303,17 +306,20 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
             case 'newmessages':
 
-                from = data.from;
-                to: datat.to;
-                id: data.uuid;
-                PersonalMessage.findOne({from:from, to: to, uuid: id}, function(err, obj){
+                var from = data.from;
+                var to = data.to;
+                var id = data.uuid;
+                PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
 
-                    if(obj){
+                    if (obj) {
 
-                        PersonalMessage.find({created_at: { $gt: obj.created_at }, $or: [ { from: from, to: to}, { from:to, to:from} ] }).sort({created_at: 1}).limit(10)
-                            .exec(function(err,newmessages){
+                        PersonalMessage.find({
+                            created_at: {$gt: obj.created_at},
+                            $or: [{from: from, to: to}, {from: to, to: from}]
+                        }).sort({created_at: 1}).limit(10)
+                            .exec(function (err, newmessages) {
 
-                                if(data){
+                                if (data) {
                                     io.to(socket.decoded_token.iss).emit("newmessages", newmessages);
                                 }
                             })
@@ -321,6 +327,25 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                 });
 
                 break;
+
+
+            case 'latestmessages':
+
+                var from = data.from;
+                //var id = data.uuid;
+
+                PersonalMessage.find({
+                    $or: [{from: from}, {to: from}]
+                }).sort({created_at: -1}).limit(10)
+                    .exec(function (err, latestmessages) {
+
+                        if (latestmessages && Array.isArray(latestmessages)) {
+                            io.to(socket.decoded_token.iss).emit("latestmessages", {from:data.from, messages:latestmessages.reverse()});
+                        }
+                    });
+
+                break;
+
         }
 
     });
