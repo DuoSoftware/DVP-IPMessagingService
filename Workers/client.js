@@ -78,4 +78,5 @@ socket.on('client', function(data){
     logger.info(data);
 
     socket.emit('accept',{to: data.jti});
+    socket.emit('sessionend',{to: data.jti});
 });

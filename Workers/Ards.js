@@ -54,7 +54,7 @@ var httpPut = function (companyInfo, serviceUrl, postData, callback) {
         body: jsonStr
     };
     try {
-        request.post(options, function optionalCallback(err, httpResponse, body) {
+        request.put(options, function optionalCallback(err, httpResponse, body) {
             if (err) {
                 console.log('upload failed:', err);
             }
@@ -167,7 +167,11 @@ var RemoveArdsRequest = function (tenant, company, sessionId, reason, callback) 
             }else{
                 if(res1.statusCode === 200) {
                     logger.info("DVP-IPMessagingService.RemoveArdsRequest:: Success");
-                    callback(undefined, JSON.parse(result));
+                    if(result && result !== "No matching resources at the moment") {
+                        callback(undefined, JSON.parse(result));
+                    }else{
+                        callback(undefined, undefined);
+                    }
                 }else{
                     logger.info("DVP-IPMessagingService.RemoveArdsRequest:: Failed");
                     callback(undefined, undefined);
@@ -210,7 +214,7 @@ var PickResource = function (tenant, company, sessionId, attributes, priority, r
                     if(res1.statusCode === 200) {
                         logger.info("DVP-IPMessagingService.PickResource:: Success");
                         var response = JSON.parse(result);
-                        callback(err, response.Result);
+                        callback(undefined, response.Result);
                     }else{
                         logger.info("DVP-IPMessagingService.PickResource:: Failed");
                         callback(undefined, undefined);

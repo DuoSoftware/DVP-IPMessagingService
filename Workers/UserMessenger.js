@@ -24,7 +24,8 @@ var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
 var User = require('dvp-mongomodels/model/User');
 var PersonalMessage = require('dvp-mongomodels/model/Room').PersonalMessage;
 var Room = require('dvp-mongomodels/model/Room').Room;
-var Message = require('dvp-mongomodels/model/Room').Message
+var Message = require('dvp-mongomodels/model/Room').Message;
+var ards = require('./Ards');
 
 
 var pub = redis(redisport, redisip, { auth_pass: redispass });
@@ -235,6 +236,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                                 name: user.name,
                                 avatar: user.avatar
                             });
+                            var client_data = socket.decoded_token;
+                            //socket.clientjti = data.to;
+                            ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Connected', '','','inbound');
 
                         } else {
 
@@ -245,6 +249,18 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         }
 
     });
+
+
+    socket.on('sessionend',function(data){
+
+        if(data && data.to) {
+            var client_data = socket.decoded_token;
+            ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
+
+        }
+    });
+
+
 
     socket.on('typing',function(data){
 

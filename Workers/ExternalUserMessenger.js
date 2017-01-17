@@ -118,6 +118,10 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
             io.to(agent).emit("client", client_data);
 
+
+        }else{
+
+            //socket.emit('error', 'no agent');
         }
     });
 
@@ -127,7 +131,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
     //io.to(agent).emit("client", client_data);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
     socket.on('message', function (data) {
 
@@ -176,6 +179,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
                     } else {
 
+                        socket.emit('error', 'no agent');
                         logger.error('No user available in room');
                         SaveMessage(message);
                     }
@@ -184,7 +188,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
         } else {
 
-            socket.emit('error', 'wait for agent');
+            socket.emit('error', 'message error');
         }
 
     });
@@ -196,6 +200,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             io.to(socket.agent).emit("typing", data);
 
     });
+
     socket.on('typingstoped', function (data) {
 
 
@@ -203,8 +208,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             io.to(socket.agent).emit("typingstoped", data);
 
     });
-
-
 
     socket.on('seen', function (data) {
 
@@ -218,6 +221,28 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
         logger.info(data);
         io.to(agent).emit("message", client_data);
     });
+
+    socket.on('retryagent', function () {
+
+        ards.PickResource(client_data.tenant, client_data.company, client_data.jti, client_data.attributes, client_data.priority, 1, otherInfo, function (err, resource) {
+
+            if(resource && resource.ResourceInfo) {
+
+                var agent = resource.ResourceInfo.Profile;
+                socket.agent = agent;
+
+                io.to(agent).emit("client", client_data);
+
+
+            }else{
+
+                socket.emit('error', 'no agent');
+            }
+        });
+
+    });
+
+
 
     socket.on('disconnect', function () {
 
