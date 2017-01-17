@@ -113,7 +113,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
             if (!resGet) {
 
-                logger.error('No user status found in redis', errGet);
+                logger.error('No user status found in redis');
             } else {
 
                 io.to(statusGroup).emit("status", resGet);
