@@ -271,10 +271,11 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                     } else {
 
                         if (obj) {
-                            io.to(socket.decoded_token.iss).emit("status", obj);
+                            socket.emit("status", obj);
                         } else {
 
                             logger.error('No users status found in redis');
+                            socket.emit('error',{action:'allstatus', message: 'no data found'});
                         }
                     }
                 });
@@ -296,7 +297,11 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                             .exec(function (err, oldmessages) {
 
                                 if (oldmessages) {
-                                    io.to(socket.decoded_token.iss).emit("oldmessages", oldmessages);
+                                    socket.emit("oldmessages", oldmessages);
+                                }else{
+
+                                    logger.error('No old message found');
+                                    socket.emit('error',{action:'oldmessages', data:data ,message: 'no data found'});
                                 }
                             })
                     }
@@ -321,6 +326,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                                 if (data) {
                                     io.to(socket.decoded_token.iss).emit("newmessages", newmessages);
+                                }else{
+                                    logger.error('No new message found');
+                                    socket.emit('error',{action:'newmessages', data:data ,message: 'no data found'});
                                 }
                             })
                     }
@@ -341,6 +349,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                         if (latestmessages && Array.isArray(latestmessages)) {
                             io.to(socket.decoded_token.iss).emit("latestmessages", {from:data.from, messages:latestmessages.reverse()});
+                        }else{
+                            logger.error('No new message found');
+                            socket.emit('error',{action:'latestmessages', data:data ,message: 'no data found'});
                         }
                     });
 
