@@ -12,6 +12,8 @@ socket.on('connect', function(){
 
     socket.emit('authenticate', {token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdWtpdGhhIiwianRpIjoiMTdmZTE4M2QtM2QyNC00NjQwLTg1NTgtNWFkNGQ5YzVlMzE1Iiwic3ViIjoiNTZhOWU3NTlmYjA3MTkwN2EwMDAwMDAxMjVkOWU4MGI1YzdjNGY5ODQ2NmY5MjExNzk2ZWJmNDMiLCJleHAiOjE4OTMzMDI3NTMsInRlbmFudCI6MSwiY29tcGFueSI6MTAzLCJzY29wZSI6W3sicmVzb3VyY2UiOiJhbGwiLCJhY3Rpb25zIjoiYWxsIn1dLCJpYXQiOjE0NjEyOTkxNTN9.PNiDQ9z-966GZlQQGaX23-VdBRi1UR0gA4nfehgi19c"});
 
+    //socket.emit('request',{request:'oldmessages', from:'John Doe', to: 'sukitha', uuid: '949f5e50-da50-11e6-a30d-5b0aa8552477'});
+
 });
 
 socket.on('echo', function(data){
@@ -38,6 +40,8 @@ socket.on('event', function(data){
 socket.on('status', function(data){
 
     logger.info(data);
+    socket.emit('request',{request:'oldmessages', from:'John Doe', to: 'sukitha', uuid: '949f5e50-da50-11e6-a30d-5b0aa8552477'});
+
 });
 
 socket.on('message', function(data){

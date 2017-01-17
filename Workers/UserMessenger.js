@@ -69,13 +69,6 @@ var SaveMessage = function(message){
 };
 
 
-var GetOldMessages = function(from, to, id){
-
-    PersonalMessage.findOne({from:from, to: to, uuid: id}, function(){
-
-    })
-
-}
 
 var UpdateRead = function(uuid){
 
@@ -135,7 +128,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         }else{
 
             if(obj) {
-                io.to(socket.decoded_token.iss).emit("status", JSON.parse(obj));
+                io.to(socket.decoded_token.iss).emit("status", obj);
             }else{
 
                 logger.error('No users status found in redis');
@@ -289,9 +282,43 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                 break;
             case 'oldmessages':
 
+                var from = data.from;
+                var to= data.to;
+                var id= data.uuid;
+                PersonalMessage.findOne({from:from, to: to, uuid: id}, function(err, obj){
+
+                    if(obj){
+
+                        PersonalMessage.find({created_at: { $lt: obj.created_at }, $or: [ { from: from, to: to}, { from:to, to:from} ] }).sort({created_at: -1}).limit(10)
+                            .exec(function(err,oldmessages){
+
+                                if(oldmessages){
+                                    io.to(socket.decoded_token.iss).emit("oldmessages", oldmessages);
+                                }
+                            })
+                    }
+                });
+
                 break;
 
             case 'newmessages':
+
+                from = data.from;
+                to: datat.to;
+                id: data.uuid;
+                PersonalMessage.findOne({from:from, to: to, uuid: id}, function(err, obj){
+
+                    if(obj){
+
+                        PersonalMessage.find({created_at: { $gt: obj.created_at }, $or: [ { from: from, to: to}, { from:to, to:from} ] }).sort({created_at: 1}).limit(10)
+                            .exec(function(err,newmessages){
+
+                                if(data){
+                                    io.to(socket.decoded_token.iss).emit("newmessages", newmessages);
+                                }
+                            })
+                    }
+                });
 
                 break;
         }
