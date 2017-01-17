@@ -29,6 +29,7 @@ var PersonalMessage = require('dvp-mongomodels/model/Room').PersonalMessage;
 var Room = require('dvp-mongomodels/model/Room').Room;
 var Message = require('dvp-mongomodels/model/Room').Message;
 var Common = require('./Common.js');
+var ards = require('./Ards');
 
 
 var pub = redis(redisport, redisip, { auth_pass: redispass });
@@ -103,13 +104,27 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
     ///////////////////////////////////////////ARDS Integration////////////////////////////////////////////////////
 
 
-    var agent = 'sukitha';
     var status = 'setup';
-
-    socket.agent = agent;
     var client_data = socket.decoded_token;
+    var otherInfo = "";
 
-    io.to(agent).emit("client", client_data);
+
+    ards.PickResource(client_data.tenant, client_data.company, client_data.jti, client_data.attributes, client_data.priority, 1, otherInfo, function (err, resource) {
+
+        if(resource && resource.ResourceInfo) {
+
+            var agent = resource.ResourceInfo.Profile;
+            socket.agent = agent;
+
+            io.to(agent).emit("client", client_data);
+
+        }
+    });
+
+
+    //var agent = 'sukitha';
+    //socket.agent = agent;
+    //io.to(agent).emit("client", client_data);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

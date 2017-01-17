@@ -27,7 +27,9 @@ socket.on('connect', function(){
         "company": 103,
         "sub": "1234567890",
         "name": "John Doe",
-        "admin": true
+        "admin": true,
+        "attributes": ["60"],
+        "priority": "0"
     }, 'abcdefgh');
 
     socket.emit('authenticate', {token: token});

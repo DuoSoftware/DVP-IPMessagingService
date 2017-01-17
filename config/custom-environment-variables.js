@@ -47,10 +47,11 @@ module.exports = {
 
         "interactionurl": "SYS_INTERACTION_HOST",
         "interactionport": "SYS_INTERACTION_PORT",
-        "interactionversion":"SYS_INTERACTION_VERSION"
-
-
-    },
+        "interactionversion":"SYS_INTERACTION_VERSION",
+        "ardsliteservice": "SYS_ARDSLITESERVICE_HOST",
+        "ardsliteport": "SYS_ARDSLITESERVICE_PORT",
+        "ardsliteversion": "SYS_ARDSLITESERVICE_VERSION"
+    }
 };
 
 //NODE_CONFIG_DIR

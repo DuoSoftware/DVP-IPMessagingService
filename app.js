@@ -4,6 +4,7 @@
 var config = require("config");
 var mongoose = require('mongoose');
 var util = require('util');
+var ards = require('./Workers/Ards');
 
 
 var mongoip=config.Mongo.ip;
@@ -30,6 +31,8 @@ mongoose.connection.once('open', function() {
 
 mongoose.connect(connectionstring);
 
+ards.RegisterChatArdsClient();
+//ards.PickResource(1,103,"chat10", ["60"], "0", 1,"No");
 
 //var messanger = config.Host.messenger;
 
