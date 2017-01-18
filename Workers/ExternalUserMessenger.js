@@ -121,7 +121,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
         }else{
 
-            //socket.emit('error', 'no agent');
+            socket.emit('error', 'no agent');
         }
     });
 
