@@ -241,9 +241,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
         });
 
     });
-
-
-
+    
     socket.on('disconnect', function () {
 
         if (socket.agent)
