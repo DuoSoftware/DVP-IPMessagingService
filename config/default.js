@@ -47,7 +47,7 @@ module.exports = {
     "Services": {
 
 
-        "interactionurl": "192.168.0.132",//interactions.app.veery.cloud
+        "interactionurl": "interactions.app.veery.cloud",//interactions.app.veery.cloud
         "interactionport": '3637',
         "interactionversion":"1.0.0.0",
         "ardsliteservice": "ardsliteservice.app.veery.cloud",

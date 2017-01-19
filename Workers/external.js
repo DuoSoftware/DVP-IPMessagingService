@@ -101,3 +101,14 @@ socket.on('disconnect', function(data){
     logger.info("disconnected");
 });
 
+socket.on('connectionerror', function(data){
+    logger.info(data);
+
+    if(data === "no_agent_found"){
+        setTimeout(function(){
+            socket.emit('retryagent',{});
+        }, 10000);
+
+    }
+});
+
