@@ -165,6 +165,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
             io.sockets.adapter.clients( [data.to], function (err, clients) {
                 if (err) {
                     socket.emit('event', {event: 'message_status', id: id, data: 'nouser'});
+                    io.to(data.to).emit("message", data);
                     logger.error('No user available in room',err);
                     SaveMessage(message);
 
@@ -395,7 +396,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
         //var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
         //redisClient.del(util.format("%s:messaging:status", socket.decoded_token.iss), redis.print);
-        io.to(statusGroup).emit("status", 'offline');
+        var statusObg = {};
+        statusObg[socket.decoded_token.iss] = 'offline';
+        io.to(statusGroup).emit("status", statusObg);
 
         var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
         //redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
