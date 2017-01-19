@@ -119,6 +119,38 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                 io.to(statusGroup).emit("status", resGet);
                 redisClient.hset(onlineUsers, socket.decoded_token.iss, resGet, redis.print);
+
+                ards.GetOngoingSessions(socket.decoded_token.tenant,socket.decoded_token.company,socket.decoded_token.context.resourceid,function(err, ongoinSessions){
+                    if(ongoinSessions && ongoinSessions.length >0){
+                        ongoinSessions.forEach(function(session){
+                            User.findOne({
+                                company: socket.decoded_token.company,
+                                tenant: socket.decoded_token.tenant,
+                                username: socket.decoded_token.iss
+                            })
+                                .select("username name avatar")
+                                .exec(function (err, user) {
+                                    if (err) {
+
+
+                                    } else {
+
+                                        if (user) {
+
+                                            io.to(session).emit("agent", {
+                                                username: user.username,
+                                                name: user.name,
+                                                avatar: user.avatar
+                                            });
+                                        } else {
+
+                                        }
+                                    }
+
+                                });
+                        });
+                    }
+                });
             }
         }
     });
@@ -240,6 +272,10 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                             //socket.clientjti = data.to;
                             ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Connected', '','','inbound');
 
+
+                            var onlineClientsUsers = util.format("%d:%d:client:online",client_data.tenant,client_data.company);
+                            redisClient.hset(onlineClientsUsers, data.to, client_data.iss, redis.print);
+
                         } else {
 
                         }
@@ -257,6 +293,8 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
             var client_data = socket.decoded_token;
             ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
 
+            var onlineClientsUsers = util.format("%d:%d:client:online",client_data.tenant,client_data.company);
+            redisClient.hdel(onlineClientsUsers, data.to, redis.print);
         }
     });
 
