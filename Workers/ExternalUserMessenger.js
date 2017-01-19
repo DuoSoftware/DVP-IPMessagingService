@@ -121,7 +121,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
         }else{
 
-            socket.emit('error', 'no agent');
+            socket.emit('connectionerror', 'no_agent_found');
         }
     });
 
@@ -178,8 +178,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
 
                     } else {
-
-                        socket.emit('error', 'no agent');
+                        socket.emit('connectionerror', 'no_agent_found');
                         logger.error('No user available in room');
                         SaveMessage(message);
                     }
@@ -187,8 +186,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             });
 
         } else {
-
-            socket.emit('error', 'message error');
+            socket.emit('connectionerror', 'message_error');
         }
 
     });
@@ -235,8 +233,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
 
             }else{
-
-                socket.emit('error', 'no agent');
+                socket.emit('connectionerror', 'no_agent_found');
             }
         });
 
@@ -251,7 +248,11 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
     });
 
+    socket.on('error', function(error) {
 
+        logger.error(error);
+
+    });
 });
 
 

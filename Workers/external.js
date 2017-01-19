@@ -101,3 +101,8 @@ socket.on('disconnect', function(data){
     logger.info("disconnected");
 });
 
+socket.on('test', function(data){
+
+    logger.info(data);
+});
+
