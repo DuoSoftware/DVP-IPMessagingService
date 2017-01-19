@@ -3,7 +3,7 @@
  */
 
 
-var socket = require('socket.io-client')('http://localhost:3333');
+var socket = require('socket.io-client')('http://104.236.197.119:6666');
 var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
 
 socket.on('connect', function(){
