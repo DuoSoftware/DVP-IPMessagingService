@@ -53,6 +53,19 @@ redisClient.on("connected", function () {
 });
 
 
+pub.on("error", function (err) {
+    logger.error("Error ",  err);
+
+});
+
+
+sub.on("error", function (err) {
+    logger.error("Error ",  err);
+
+});
+
+
+
 var SaveMessage = function(message){
 
     message.save(function (err, _message) {
@@ -164,6 +177,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             io.sockets.adapter.clients([data.to], function (err, clients) {
                 if (err) {
                     logger.error('No user available in room', err);
+                    io.to(data.to).emit("message", data);
                     SaveMessage(message);
 
                 } else {
