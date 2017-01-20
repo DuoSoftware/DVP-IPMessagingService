@@ -124,6 +124,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
     var onlineClientsUsers = util.format("%d:%d:client:online",client_data.tenant,client_data.company);
     redisClient.hget(onlineClientsUsers, client_data.jti, function (err, obj) {
             if(obj) {
+                socket.agent = obj;
                 io.to(obj).emit("client", client_data);
             }else{
 
