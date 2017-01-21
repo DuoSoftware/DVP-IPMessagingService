@@ -50,7 +50,7 @@ module.exports = {
         "interactionurl": "interactions.app.veery.cloud",//interactions.app.veery.cloud
         "interactionport": '3637',
         "interactionversion":"1.0.0.0",
-        "ardsliteservice": "ardsliteservice.app.veery.cloud",
+        "ardsliteservice": "ardsliteservice.app.veery.cloud",//ardsliteservice.app.veery.cloud
         "ardsliteport": "8828",
         "ardsliteversion": "1.0.0.0"
 

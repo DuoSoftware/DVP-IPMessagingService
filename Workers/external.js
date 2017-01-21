@@ -21,7 +21,7 @@ socket.on('connect', function(){
 
 
     var token = jwt.sign({
-        "jti": uuid.v1(),
+        "jti": "14445555",//uuid.v1(),
         "iss": "singer",
         "tenant": 1,
         "company": 103,

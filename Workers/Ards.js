@@ -285,6 +285,77 @@ var UpdateResource = function(tenant, company, sessionId, resourceId, state, oth
     }
 };
 
+var GetOngoingSessions = function (tenant, company, resourceId, callback) {
+
+    var ongoingSessions = [];
+
+    try {
+
+        var ardsResourceUrl = util.format("http://%s/DVP/API/%s/ARDS/resource/%s", config.Services.ardsliteservice, config.Services.ardsliteversion, resourceId);
+        if (validator.isIP(config.Services.ardsliteservice)) {
+            ardsResourceUrl = util.format("http://%s:%s/DVP/API/%s/ARDS/resource/%s", config.Services.ardsliteservice, config.Services.ardsliteport, config.Services.ardsliteversion, resourceId);
+        }
+
+        var companyInfo = util.format("%d:%d", tenant, company);
+
+        httpGet(companyInfo, ardsResourceUrl, function (err, res1, result) {
+            if(err){
+                logger.error("DVP-IPMessagingService.GetOngoingSessions:: Error::"+ err);
+                callback(err, ongoingSessions);
+            }else{
+
+                if(res1.statusCode === 200) {
+
+                    logger.info("DVP-IPMessagingService.GetOngoingSessions:: Success");
+
+                    if(result) {
+                        var response = JSON.parse(result);
+
+                        if(response && response.IsSuccess && response.Result) {
+                            var resourceData = response.Result.obj;
+
+                            if (resourceData && resourceData.ConcurrencyInfo) {
+                                for (var i = 0; i < resourceData.ConcurrencyInfo.length; i++) {
+
+                                    var cInfo = resourceData.ConcurrencyInfo[i];
+                                    if (cInfo.HandlingType === "CHAT") {
+                                        cInfo.SlotInfo.forEach(function (slot) {
+                                            if (slot.HandlingRequest && slot.State === "Connected") {
+                                                ongoingSessions.push(slot.HandlingRequest);
+                                            }
+                                        });
+
+                                        break;
+                                    }
+
+                                }
+
+                            }
+                        }
+
+                    }
+
+                    callback(undefined, ongoingSessions);
+
+                }else{
+
+                    logger.info("DVP-IPMessagingService.GetOngoingSessions:: Failed");
+                    callback(undefined, ongoingSessions);
+
+                }
+
+            }
+        });
+
+    }catch(ex){
+
+        logger.error("DVP-IPMessagingService.GetOngoingSessions:: Exception::"+ ex);
+        callback(ex, ongoingSessions);
+
+    }
+};
+
 module.exports.RegisterChatArdsClient = RegisterChatArdsClient;
 module.exports.PickResource = PickResource;
 module.exports.UpdateResource = UpdateResource;
+module.exports.GetOngoingSessions = GetOngoingSessions;

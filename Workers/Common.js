@@ -95,7 +95,8 @@ module.exports.CompanyChatSecret = function(req, payload, done){
                         }else{
 
                             logger.error("There is an error in  create engagements for this session "+ payload.jit);
-                            done(new Error('engagement_failed'));
+                            //done(new Error('engagement_failed'));
+                            return done(null, key);
 
 
                         }
