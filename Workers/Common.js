@@ -102,7 +102,7 @@ module.exports.CompanyChatSecret = function(req, payload, done){
                     }
                     catch (excep) {
 
-                        done(new Error('wrong token format'));
+                        done(new Error('wrong_token_format'));
 
                     }
                 });
