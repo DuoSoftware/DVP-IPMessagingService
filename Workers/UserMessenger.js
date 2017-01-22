@@ -177,6 +177,8 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
             //io.to(socket.decoded_token.iss).emit('echo', data);
             data.from = socket.decoded_token.iss;
             data.time = Date.now();
+            data.uuid = data.id;
+            data.status = 'pending';
             var id = data.id;//uuid.v1();
 
             var toRedisKey = util.format("%s:messaging:status", data.to);
@@ -196,7 +198,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
             io.sockets.adapter.clients( [data.to], function (err, clients) {
                 if (err) {
-                    socket.emit('event', {event: 'message_status', id: id, data: 'nouser'});
+                    socket.emit('seen', {from: socket.decoded_token.iss, to:data.to, id: id, data: 'nouser'});
                     io.to(data.to).emit("message", data);
                     logger.error('No user available in room',err);
                     SaveMessage(message);
@@ -205,16 +207,17 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                     if(Array.isArray(clients) && clients.length > 0) {
 
 
+                        data.status = 'delivered';
                         data.id = id;
                         io.to(data.to).emit("message", data);
-                        socket.emit('event', {event: 'message_status', id: id, data: 'delivered'});
+                        socket.emit('seen', {from: socket.decoded_token.iss, to:data.to, id: id, data: 'delivered'});
                         message.status = 'delivered';
 
                         SaveMessage(message);
 
                     }else{
 
-                        socket.emit('event', {event: 'message_status', id: id, data: 'nouser'});
+                        socket.emit('seen', {from: socket.decoded_token.iss, to:data.to, id: id, data: 'nouser'});
                         logger.error('No user available in room');
                         SaveMessage(message);
                     }
@@ -240,7 +243,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
         }else{
 
-            socket.emit('error',{action:'status', message: 'incorrect data'});
+            socket.emit('connectionerror',{action:'status', message: 'incorrect data'});
         }
 
     });
@@ -287,7 +290,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     });
 
-
     socket.on('sessionend',function(data){
 
         if(data && data.to) {
@@ -299,19 +301,21 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         }
     });
 
-
-
     socket.on('typing',function(data){
 
-        if(data && data.to)
+        if(data && data.to) {
+            data.from = socket.decoded_token.iss;
             io.to(data.to).emit("typing", data);
+        }
 
     });
 
     socket.on('typingstoped',function(data){
 
-        if(data && data.to)
+        if(data && data.to) {
+            data.from = socket.decoded_token.iss;
             io.to(data.to).emit("typingstoped", data);
+        }
 
     });
 
@@ -319,7 +323,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
         switch(data.request) {
             case 'allstatus':
-
                 redisClient.hgetall(onlineUsers, function (err, obj) {
                     if (err) {
                         logger.error('No users status found in redis', err);
@@ -336,6 +339,37 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                 });
 
                 break;
+
+            case 'chatstatus':
+
+                var keys = [];
+                keys.push( util.format("%s:messaging:status", data.from));
+                keys.push( util.format("%s:messaging:time", data.from));
+                keys.push( util.format("%s:messaging:lastseen", data.from));
+                redisClient.mget(keys, function (err, obj) {
+                    if (err) {
+                        logger.error('No users status found in redis', err);
+                    } else {
+
+                        if (obj && Array.isArray(obj) && obj.length > 2) {
+
+                            var useChatObj = {};
+                            useChatObj.status = obj[0];
+                            useChatObj.time = obj[1];
+                            useChatObj.lastseen = obj[2];
+
+                            socket.emit("chatstatus", useChatObj);
+                        } else {
+
+                            logger.error('No users status found in redis');
+                            socket.emit('error',{action:'status', message: 'no data found'});
+                        }
+                    }
+                });
+
+                break;
+
+
             case 'oldmessages':
 
                 var from = data.from;
@@ -356,7 +390,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                                 }else{
 
                                     logger.error('No old message found');
-                                    socket.emit('error',{action:'oldmessages', data:data ,message: 'no data found'});
+                                    socket.emit('connectionerror',{action:'oldmessages', data:data ,message: 'no data found'});
                                 }
                             })
                     }
@@ -383,7 +417,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                                     io.to(socket.decoded_token.iss).emit("newmessages", newmessages);
                                 }else{
                                     logger.error('No new message found');
-                                    socket.emit('error',{action:'newmessages', data:data ,message: 'no data found'});
+                                    socket.emit('connectionerror',{action:'newmessages', data:data ,message: 'no data found'});
                                 }
                             })
                     }
@@ -406,7 +440,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                             io.to(socket.decoded_token.iss).emit("latestmessages", {from:data.from, messages:latestmessages.reverse()});
                         }else{
                             logger.error('No new message found');
-                            socket.emit('error',{action:'latestmessages', data:data ,message: 'no data found'});
+                            socket.emit('connectionerror',{action:'latestmessages', data:data ,message: 'no data found'});
                         }
                     });
 
@@ -425,6 +459,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
     socket.on('seen',function(data){
 
         if(data && data.to && data.id) {
+            data.from = socket.decoded_token.iss;
             io.to(data.to).emit("seen", data);
             UpdateRead(data.id);
         }
@@ -445,7 +480,36 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
     });
 
-    PersonalMessage.find({to: socket.decoded_token.iss, status: 'pending'}, function (err, messages) {
+
+
+    var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
+
+    var aggregator = [{
+        $match: queryObject
+    },{
+        $group: {
+            _id: "$from",
+            messages: {$sum: 1}
+        }
+    }
+    ];
+
+    PersonalMessage.aggregate(aggregator,function (err, messages) {
+        if (err) {
+
+            logger.error('Get personal messages failed',err);
+        }
+        else {
+            if(messages) {
+
+                io.to(socket.decoded_token.iss).emit("pending", messages);
+            }
+        }
+    });
+
+
+    /*
+    PersonalMessage.find(queryObject, function (err, messages) {
         if (err) {
 
             logger.error('Get personal messages failed',err);
@@ -472,6 +536,8 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
             }
         }
     });
+
+    */
 
 
 });

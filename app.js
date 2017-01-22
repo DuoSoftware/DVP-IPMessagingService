@@ -17,7 +17,7 @@ var connectionstring = util.format('mongodb://%s:%s@%s:%d/%s',mongouser,mongopas
 
 
 mongoose.connection.on('error', function (err) {
-    console.error( new Error(err));
+    console.error( err);
 });
 
 mongoose.connection.on('disconnected', function() {
