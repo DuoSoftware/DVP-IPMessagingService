@@ -198,7 +198,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
             io.sockets.adapter.clients( [data.to], function (err, clients) {
                 if (err) {
-                    socket.emit('seen', {from: socket.decoded_token.iss, to:data.to, id: id, data: 'nouser'});
+                    socket.emit('seen', {from: data.to, to:socket.decoded_token.iss, id: id, status: 'nouser'});
                     io.to(data.to).emit("message", data);
                     logger.error('No user available in room',err);
                     SaveMessage(message);
@@ -210,14 +210,14 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                         data.status = 'delivered';
                         data.id = id;
                         io.to(data.to).emit("message", data);
-                        socket.emit('seen', {from: socket.decoded_token.iss, to:data.to, id: id, data: 'delivered'});
+                        socket.emit('seen', {from: data.to, to:socket.decoded_token.iss, id: id, status: 'delivered'});
                         message.status = 'delivered';
 
                         SaveMessage(message);
 
                     }else{
 
-                        socket.emit('seen', {from: socket.decoded_token.iss, to:data.to, id: id, data: 'nouser'});
+                        socket.emit('seen', {from: data.to, to:socket.decoded_token.iss, id: id, status: 'nouser'});
                         logger.error('No user available in room');
                         SaveMessage(message);
                     }
@@ -460,6 +460,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
         if(data && data.to && data.id) {
             data.from = socket.decoded_token.iss;
+            data.status = 'seen';
             io.to(data.to).emit("seen", data);
             UpdateRead(data.id);
         }
