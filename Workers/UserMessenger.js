@@ -446,6 +446,35 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                 break;
 
+            case 'pendingall':
+                
+                var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
+
+                var aggregator = [{
+                    $match: queryObject
+                },{
+                    $group: {
+                        _id: "$from",
+                        messages: {$sum: 1}
+                    }
+                }
+                ];
+
+                PersonalMessage.aggregate(aggregator,function (err, messages) {
+                    if (err) {
+
+                        logger.error('Get personal messages failed',err);
+                    }
+                    else {
+                        if(messages) {
+
+                            io.to(socket.decoded_token.iss).emit("pending", messages);
+                        }
+                    }
+                });
+
+                break;
+
         }
 
     });
