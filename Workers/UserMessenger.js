@@ -354,6 +354,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                         if (obj && Array.isArray(obj) && obj.length > 2) {
 
                             var useChatObj = {};
+                            useChatObj.from = data.from;
                             useChatObj.status = obj[0];
                             useChatObj.time = obj[1];
                             useChatObj.lastseen = obj[2];
