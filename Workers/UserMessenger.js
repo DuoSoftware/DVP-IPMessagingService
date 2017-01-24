@@ -293,9 +293,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
     socket.on('sessionend',function(data){
 
         if(data && data.to) {
+            var client_data = socket.decoded_token;
             io.to(data.to).emit("left", client_data);
 
-            var client_data = socket.decoded_token;
             ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
 
             var onlineClientsUsers = util.format("%d:%d:client:online",client_data.tenant,client_data.company);
