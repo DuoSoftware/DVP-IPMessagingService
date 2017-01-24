@@ -293,6 +293,8 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
     socket.on('sessionend',function(data){
 
         if(data && data.to) {
+            io.to(data.to).emit("left", client_data);
+
             var client_data = socket.decoded_token;
             ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
 

@@ -163,8 +163,8 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             data.display = socket.decoded_token.name;
             data.time = Date.now();
             data.to = socket.agent;
-
-            var id = data.id;
+            var id = uuid.v1();
+            //data.id;//
 
             var toRedisKey = util.format("%s:messaging:status", data.to);
 
@@ -192,6 +192,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                     if (Array.isArray(clients) && clients.length > 0) {
 
 
+                        data.id = id;
                         io.to(data.to).emit("message", data);
                         message.status = 'delivered';
 
@@ -273,7 +274,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
     });
 
-    socket.on('endchat', function () {
+    socket.on('sessionend', function () {
 
         if (socket.agent)
             io.to(socket.agent).emit("left", client_data);

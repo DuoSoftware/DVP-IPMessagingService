@@ -112,3 +112,8 @@ socket.on('connectionerror', function(data){
     }
 });
 
+socket.on('left', function(data){
+
+    logger.info("left");
+});
+
