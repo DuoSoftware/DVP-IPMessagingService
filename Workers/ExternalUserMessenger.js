@@ -216,16 +216,20 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
     socket.on('typing', function (data) {
 
 
-        if (data && socket.agent)
+        if (data && socket.agent) {
+            data.from = socket.decoded_token.jti;
             io.to(socket.agent).emit("typing", data);
+        }
 
     });
 
     socket.on('typingstoped', function (data) {
 
 
-        if (data && socket.agent)
+        if (data && socket.agent) {
+            data.from = socket.decoded_token.jti;
             io.to(socket.agent).emit("typingstoped", data);
+        }
 
     });
 
