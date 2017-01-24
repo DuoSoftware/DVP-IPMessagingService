@@ -269,6 +269,13 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
     
     socket.on('disconnect', function () {
 
+        //if (socket.agent)
+        //    io.to(socket.agent).emit("left", client_data);
+
+    });
+
+    socket.on('endchat', function () {
+
         if (socket.agent)
             io.to(socket.agent).emit("left", client_data);
 
