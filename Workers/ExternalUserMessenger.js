@@ -239,8 +239,14 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
     socket.on('agent', function(data){
         logger.info(data);
-        io.to(agent).emit("message", client_data);
+        //io.to(agent).emit("clientdata", client_data);
     });
+
+    socket.on('existingagent', function(data){
+        logger.info(data);
+        io.to(agent).emit("existingclient", client_data);
+    });
+
 
     socket.on('retryagent', function () {
 

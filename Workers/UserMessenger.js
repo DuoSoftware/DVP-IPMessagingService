@@ -137,7 +137,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                                         if (user) {
 
-                                            io.to(session).emit("agent", {
+                                            io.to(session).emit("existingagent", {
                                                 username: user.username,
                                                 name: user.name,
                                                 avatar: user.avatar
