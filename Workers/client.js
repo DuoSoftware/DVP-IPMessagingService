@@ -95,6 +95,12 @@ socket.on('client', function(data){
     //socket.emit('sessionend',{to: data.jti});
 });
 
+socket.on('existingclient', function(data){
+
+    logger.info(data);
+});
+
+
 socket.on('left', function(data){
 
     logger.info(data.jti);
