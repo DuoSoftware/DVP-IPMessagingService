@@ -231,7 +231,11 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
     socket.on('seen', function (data) {
 
+
+
         if (data && socket.agent && data.id) {
+            data.from = socket.decoded_token.jti;
+            data.status = 'seen';
             io.to(socket.agent).emit("seen", data);
             UpdateRead(data.id);
         }
