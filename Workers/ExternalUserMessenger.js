@@ -164,6 +164,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             data.display = socket.decoded_token.name;
             data.time = Date.now();
             data.to = socket.agent;
+            data.who = 'client';
             var id = uuid.v1();
             //data.id;//
 
@@ -178,7 +179,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                 uuid: id,
                 data: data.message,
                 session: socket.decoded_token.jti,
-                from: socket.decoded_token.name,
+                from: socket.decoded_token.jti,
                 to: data.to
 
             });
