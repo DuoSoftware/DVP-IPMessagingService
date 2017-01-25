@@ -307,8 +307,8 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
             ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
 
-            var onlineClientsUsers = util.format("%d:%d:client:online",client_data.tenant,client_data.company);
-            redisClient.hdel(onlineClientsUsers, data.to, redis.print);
+            var onlineClientsUsers = util.format("%d:%d:client:online:",client_data.tenant,client_data.company, data.to);
+            redisClient.del(onlineClientsUsers, redis.print);
         }
     });
 
