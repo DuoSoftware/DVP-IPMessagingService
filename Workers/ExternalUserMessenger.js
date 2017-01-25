@@ -121,7 +121,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
     var client_data = socket.decoded_token;
     var otherInfo = "";
 
-    var onlineClientsUsers = util.format("%d:%d:client:online:",client_data.tenant,client_data.company, client_data.jti);
+    var onlineClientsUsers = util.format("%d:%d:client:online:%s",client_data.tenant,client_data.company, client_data.jti);
     redisClient.get(onlineClientsUsers, function (err, strObj) {
             if(strObj) {
                 var obj = JSON.parse(strObj);
