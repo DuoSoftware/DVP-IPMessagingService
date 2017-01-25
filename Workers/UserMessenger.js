@@ -123,31 +123,38 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                 ards.GetOngoingSessions(socket.decoded_token.tenant,socket.decoded_token.company,socket.decoded_token.context.resourceid,function(err, ongoinSessions){
                     if(ongoinSessions && ongoinSessions.length >0){
                         ongoinSessions.forEach(function(session){
-                            User.findOne({
-                                company: socket.decoded_token.company,
-                                tenant: socket.decoded_token.tenant,
-                                username: socket.decoded_token.iss
-                            })
-                                .select("username name avatar")
-                                .exec(function (err, user) {
-                                    if (err) {
+                            //User.findOne({
+                            //    company: socket.decoded_token.company,
+                            //    tenant: socket.decoded_token.tenant,
+                            //    username: socket.decoded_token.iss
+                            //})
+                            //    .select("username name avatar")
+                            //    .exec(function (err, user) {
+                            //        if (err) {
+                            //
+                            //
+                            //        } else {
+                            //
+                            //            if (user) {
+
+                            var onlineclients = util.format("%d:%d:client:online:%s",socket.decoded_token.tenant,socket.decoded_token.company,session);
+                            redisClient.get(onlineclients, function(err, strObj){
+
+                                if(strObj){
+
+                                    var obj = JSON.parse(strObj);
+                                    socket.emit("existingclient", obj);
+                                }
+
+                            });
 
 
-                                    } else {
-
-                                        if (user) {
-
-                                            io.to(session).emit("existingagent", {
-                                                username: user.username,
-                                                name: user.name,
-                                                avatar: user.avatar
-                                            });
-                                        } else {
-
-                                        }
-                                    }
-
-                                });
+                                //        } else {
+                                //
+                                //        }
+                                //    }
+                                //
+                                //});
                         });
                     }
                 });
@@ -277,8 +284,10 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                             ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Connected', '','','inbound');
 
 
-                            var onlineClientsUsers = util.format("%d:%d:client:online",client_data.tenant,client_data.company);
-                            redisClient.hset(onlineClientsUsers, data.to, client_data.iss, redis.print);
+                            var onlineClientsUsers = util.format("%d:%d:client:online:%s",client_data.tenant,client_data.company,data.jti);
+                            data.agent = socket.decoded_token.iss;
+                            var jsonData = JSON.stringify(data);
+                            redisClient.set(onlineClientsUsers, jsonData, redis.print);
 
                         } else {
 
