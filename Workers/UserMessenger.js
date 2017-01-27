@@ -441,10 +441,11 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
             case 'latestmessages':
 
                 var from = data.from;
+                var to = socket.decoded_token.iss;
                 //var id = data.uuid;
 
                 PersonalMessage.find({
-                    $or: [{from: from}, {to: from}]
+                    $or: [{from: from, to: to}, {from: to, to: from}]
                 }).sort({created_at: -1}).limit(10)
                     .exec(function (err, latestmessages) {
 
