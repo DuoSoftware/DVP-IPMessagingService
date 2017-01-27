@@ -114,11 +114,12 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
     var client_data = socket.decoded_token;
     var otherInfo = "";
 
-    var onlineClientsUsers = util.format("%d:%d:client:online",client_data.tenant,client_data.company);
-    redisClient.hget(onlineClientsUsers, client_data.jti, function (err, obj) {
-            if(obj) {
-                socket.agent = obj;
-                io.to(obj).emit("client", client_data);
+    var onlineClientsUsers = util.format("%d:%d:client:online:%s",client_data.tenant,client_data.company, client_data.jti);
+    redisClient.get(onlineClientsUsers, function (err, strObj) {
+            if(strObj) {
+                var obj = JSON.parse(strObj);
+                socket.agent = obj.agent;
+                io.to(obj.agent).emit("existingclient", client_data);
             }else{
 
                 ards.PickResource(client_data.tenant, client_data.company, client_data.jti, client_data.attributes, client_data.priority, 1, otherInfo, function (err, resource) {
@@ -156,6 +157,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             data.display = socket.decoded_token.name;
             data.time = Date.now();
             data.to = socket.agent;
+            data.who = 'client';
             var id = uuid.v1();
             //data.id;//
 
@@ -170,7 +172,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                 uuid: id,
                 data: data.message,
                 session: socket.decoded_token.jti,
-                from: socket.decoded_token.name,
+                from: socket.decoded_token.jti,
                 to: data.to
 
             });
