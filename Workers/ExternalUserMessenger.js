@@ -43,27 +43,20 @@ redisClient.select(redisdb, function() { logger.info("Redis Db selected " + redi
 
 redisClient.on("error", function (err) {
     logger.error("Error ",  err);
-
 });
 
 redisClient.on("connected", function () {
     logger.info("Redis Connected ");
-
-
 });
 
 
 pub.on("error", function (err) {
     logger.error("Error ",  err);
-
 });
-
 
 sub.on("error", function (err) {
     logger.error("Error ",  err);
-
 });
-
 
 
 var SaveMessage = function(message){
