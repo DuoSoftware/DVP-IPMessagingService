@@ -299,6 +299,15 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     });
 
+    socket.on('reject',function(data) {
+
+        if (data && data.to) {
+            var client_data = socket.decoded_token;
+            io.to(data.to).emit("agent_reject", client_data);
+        }
+
+    });
+
     socket.on('sessionend',function(data){
 
         if(data && data.to) {

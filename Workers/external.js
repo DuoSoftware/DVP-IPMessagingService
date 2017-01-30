@@ -117,3 +117,11 @@ socket.on('left', function(data){
     logger.info("left");
 });
 
+socket.on('agent_reject', function(data){
+
+    logger.info("agent_reject");
+
+    setTimeout(function(){
+        socket.emit('retryagent',{});
+    }, 10000);
+});
