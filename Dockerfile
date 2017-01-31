@@ -5,12 +5,12 @@
 #RUN cd /usr/local/src/ipmessagingservice; npm install
 #CMD ["nodejs", "/usr/local/src/ipmessagingservice/app.js"]
 
-#EXPOSE 8886
+#EXPOSE 8887
 
 FROM node:5.10.0
 RUN git clone git://github.com/DuoSoftware/DVP-IPMessagingService.git /usr/local/src/ipmessagingservice
 RUN cd /usr/local/src/ipmessagingservice;
 WORKDIR /usr/local/src/ipmessagingservice
 RUN npm install
-EXPOSE 8886
+EXPOSE 8887
 CMD [ "node", "/usr/local/src/ipmessagingservice/app.js" ]

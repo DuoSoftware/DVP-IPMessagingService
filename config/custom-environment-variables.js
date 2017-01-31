@@ -32,7 +32,7 @@ module.exports = {
     {
         "vdomain": "LB_FRONTEND",
         "domain": "HOST_NAME",
-        "port": "HOST_CSATSERVICE_PORT",
+        "port": "HOST_IPMESSANGERSERVICE_PORT",
         "version": "HOST_VERSION"
     },
 
@@ -45,9 +45,9 @@ module.exports = {
 
     "Services": {
 
-        "interactionurl": "SYS_INTERACTION_HOST",
-        "interactionport": "SYS_INTERACTION_PORT",
-        "interactionversion":"SYS_INTERACTION_VERSION",
+        "interactionurl": "SYS_INTERACTIONS_HOST",
+        "interactionport": "SYS_INTERACTIONS_PORT",
+        "interactionversion":"SYS_INTERACTIONS_VERSION",
         "ardsliteservice": "SYS_ARDSLITESERVICE_HOST",
         "ardsliteport": "SYS_ARDSLITESERVICE_PORT",
         "ardsliteversion": "SYS_ARDSLITESERVICE_VERSION"
