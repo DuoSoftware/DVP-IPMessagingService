@@ -120,6 +120,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                 var obj = JSON.parse(strObj);
                 socket.agent = obj.agent;
                 io.to(obj.agent).emit("existingclient", client_data);
+                socket.emit("existingagent", obj.agentdata);
             }else{
 
                 ards.PickResource(client_data.tenant, client_data.company, client_data.jti, client_data.attributes, client_data.priority, 1, otherInfo, function (err, resource) {
@@ -158,8 +159,12 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             data.time = Date.now();
             data.to = socket.agent;
             data.who = 'client';
+
             var id = uuid.v1();
-            //data.id;//
+            if(data.id)
+                id = data.id;
+
+
 
             var toRedisKey = util.format("%s:messaging:status", data.to);
 

@@ -274,11 +274,12 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                         if (user) {
 
-                            io.to(data.to).emit("agent", {
+                            var agentData = {
                                 username: user.username,
                                 name: user.name,
                                 avatar: user.avatar
-                            });
+                            };
+                            io.to(data.to).emit("agent", agentData);
                             var client_data = socket.decoded_token;
                             //socket.clientjti = data.to;
                             ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Connected', '','','inbound');
@@ -286,6 +287,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                             var onlineClientsUsers = util.format("%d:%d:client:online:%s",client_data.tenant,client_data.company,data.jti);
                             data.agent = socket.decoded_token.iss;
+                            data.agentdata = agentData;
                             var jsonData = JSON.stringify(data);
                             redisClient.set(onlineClientsUsers, jsonData, redis.print);
 
