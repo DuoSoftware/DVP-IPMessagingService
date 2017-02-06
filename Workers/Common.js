@@ -68,6 +68,19 @@ module.exports.CompanyChatSecret = function(req, payload, done){
                     "channel_to": payload.iss
                 };
 
+                if(payload.channel){
+                    engagementData.channel = payload.channel;
+                }
+
+                if(payload.jti){
+                    engagementData.channel_id = payload.jti;
+                    //req.body.channel_id
+                }
+
+                if(payload.contact){
+                    engagementData.raw = payload.contact;
+                }
+
                 logger.debug("Calling Engagement service URL %s", engagementURL);
                 request({
                     method: "POST",
