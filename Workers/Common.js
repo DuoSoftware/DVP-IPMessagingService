@@ -68,6 +68,10 @@ module.exports.CompanyChatSecret = function(req, payload, done){
                     "channel_to": payload.iss
                 };
 
+                if(payload.session_id)
+                    engagementData.engagement_id = payload.session_id;
+
+
                 if(payload.channel){
                     engagementData.channel = payload.channel;
                 }

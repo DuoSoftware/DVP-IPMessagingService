@@ -34,7 +34,7 @@ var ards = require('./Ards');
 
 var pub = redis(redisport, redisip, { auth_pass: redispass });
 var sub = redis(redisport, redisip, { auth_pass: redispass });
-io.adapter(adapter({ pubClient: pub, subClient: sub }));
+io.adapter(adapter({ requestsTimeout: 10000, pubClient: pub, subClient: sub }));
 
 
 var redisClient = redis(redisport,redisip,{ auth_pass: redispass });
