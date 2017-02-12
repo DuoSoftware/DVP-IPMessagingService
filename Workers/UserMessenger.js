@@ -265,7 +265,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                     tenant: socket.decoded_token.tenant,
                     username: socket.decoded_token.iss
                 })
-                .select("username name avatar")
+                .select("username name avatar firstname lastname")
                 .exec(function (err, user) {
                     if (err) {
 
@@ -276,9 +276,16 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                             var agentData = {
                                 username: user.username,
-                                name: user.name,
+                                name: user.firstname + "" + user.lastname,
+                                id: user.id,
                                 avatar: user.avatar
                             };
+
+                            if(data.profile){
+
+                                agentData.client = data.profile;
+                            }
+
                             io.to(data.to).emit("agent", agentData);
                             var client_data = socket.decoded_token;
                             //socket.clientjti = data.to;
