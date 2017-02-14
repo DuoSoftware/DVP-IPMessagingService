@@ -131,7 +131,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                     if (resource && resource.ResourceInfo) {
 
                         var agent = resource.ResourceInfo.Profile;
-                        socket.agent = agent;
+                        //socket.agent = agent;
                         client_data.profile = profile;
 
                         io.to(agent).emit("client", client_data);
@@ -249,11 +249,13 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
         socket.on('agent', function (data) {
             logger.info(data);
+            socket.agent = data.username;
             //io.to(agent).emit("clientdata", client_data);
         });
 
         socket.on('existingagent', function (data) {
             logger.info(data);
+            socket.agent = data.username;
             io.to(agent).emit("existingclient", client_data);
         });
 
@@ -265,7 +267,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                 if (resource && resource.ResourceInfo) {
 
                     var agent = resource.ResourceInfo.Profile;
-                    socket.agent = agent;
+                    //socket.agent = agent;
 
                     client_data.profile = profile;
                     io.to(agent).emit("client", client_data);
