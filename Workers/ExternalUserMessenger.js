@@ -249,14 +249,27 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
         socket.on('agent', function (data) {
             logger.info(data);
-            socket.agent = data.username;
+            if(!socket.agent) {
+                socket.agent = data.username;
+            }else{
+
+                io.to(data.username).emit("message", "Chat has routed to another user");
+            }
             //io.to(agent).emit("clientdata", client_data);
         });
 
         socket.on('existingagent', function (data) {
             logger.info(data);
-            socket.agent = data.username;
-            io.to(agent).emit("existingclient", client_data);
+            //socket.agent = data.username;
+
+            if(!socket.agent) {
+                socket.agent = data.username;
+                io.to(agent).emit("existingclient", client_data);
+            }else{
+
+                io.to(data.username).emit("message", "Chat has routed to another user");
+            }
+
         });
 
 
