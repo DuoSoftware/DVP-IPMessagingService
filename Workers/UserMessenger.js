@@ -69,8 +69,6 @@ var SaveMessage = function(message){
     });
 };
 
-
-
 var UpdateRead = function(uuid){
 
     PersonalMessage.findOneAndUpdate({uuid:uuid},{status:'seen'},function (err, _message) {
@@ -107,6 +105,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
     var fromRedisKey = util.format("%s:messaging:status", socket.decoded_token.iss);
     var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
 
+
     redisClient.get(fromRedisKey, function (errGet, resGet) {
         if (errGet) {
             logger.error('No user status found in redis', errGet);
@@ -115,27 +114,19 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
             if (!resGet) {
 
                 logger.error('No user status found in redis');
+
             } else {
 
-                io.to(statusGroup).emit("status", resGet);
+                var statusObg = {};
+                statusObg[socket.decoded_token.iss] = resGet;
+
+                io.to(statusGroup).emit("status", statusObg);
                 redisClient.hset(onlineUsers, socket.decoded_token.iss, resGet, redis.print);
 
                 ards.GetOngoingSessions(socket.decoded_token.tenant,socket.decoded_token.company,socket.decoded_token.context.resourceid,function(err, ongoinSessions){
                     if(ongoinSessions && ongoinSessions.length >0){
                         ongoinSessions.forEach(function(session){
-                            //User.findOne({
-                            //    company: socket.decoded_token.company,
-                            //    tenant: socket.decoded_token.tenant,
-                            //    username: socket.decoded_token.iss
-                            //})
-                            //    .select("username name avatar")
-                            //    .exec(function (err, user) {
-                            //        if (err) {
-                            //
-                            //
-                            //        } else {
-                            //
-                            //            if (user) {
+
 
                             var onlineclients = util.format("%d:%d:client:online:%s",socket.decoded_token.tenant,socket.decoded_token.company,session);
                             redisClient.get(onlineclients, function(err, strObj){
@@ -148,19 +139,46 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                             });
 
-
-                                //        } else {
-                                //
-                                //        }
-                                //    }
-                                //
-                                //});
                         });
                     }
                 });
             }
         }
     });
+
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //var statusObg = {};
+    //statusObg[socket.decoded_token.iss] = 'online';
+    //io.to(statusGroup).emit("status", statusObg);
+    //
+    //var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
+    //redisClient.hset(onlineUsers, socket.decoded_token.iss, 'online', redis.print);
+    //
+    //ards.GetOngoingSessions(socket.decoded_token.tenant,socket.decoded_token.company,socket.decoded_token.context.resourceid,function(err, ongoinSessions){
+    //    if(ongoinSessions && ongoinSessions.length >0){
+    //        ongoinSessions.forEach(function(session){
+    //
+    //
+    //            var onlineclients = util.format("%d:%d:client:online:%s",socket.decoded_token.tenant,socket.decoded_token.company,session);
+    //            redisClient.get(onlineclients, function(err, strObj){
+    //
+    //                if(strObj){
+    //
+    //                    var obj = JSON.parse(strObj);
+    //                    socket.emit("existingclient", obj);
+    //                }
+    //
+    //            });
+    //
+    //        });
+    //    }
+    //});
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     redisClient.hgetall(onlineUsers, function (err, obj) {
         if(err){
