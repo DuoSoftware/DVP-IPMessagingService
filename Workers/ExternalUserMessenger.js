@@ -188,7 +188,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
                 });
 
-                
+
                 io.to(data.to).emit("message", data);
                 console.log(data);
                 io.sockets.adapter.clients([data.to], function (err, clients) {

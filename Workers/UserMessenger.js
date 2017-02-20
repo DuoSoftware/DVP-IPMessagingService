@@ -96,7 +96,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     redisClient.set(util.format("%s:messaging:time",socket.decoded_token.iss),Date.now().toString(),redis.print);
 
-   // logger.info(socket.handshake);
+   console.log(socket.decoded_token.iss);
 
     socket.join(socket.decoded_token.iss);
     var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
