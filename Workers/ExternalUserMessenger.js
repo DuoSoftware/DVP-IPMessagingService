@@ -122,7 +122,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             if (strObj) {
                 var obj = JSON.parse(strObj);
                 socket.agent = obj.agent;
-                io.to(obj.agent).emit("existingclient", client_data);
+                io.in(obj.agent).emit("existingclient", client_data);
                 socket.emit("existingagent", obj.agentdata);
             } else {
 
@@ -137,7 +137,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
                         client_data.profile = profile;
 
-                        io.to(agent).emit("client", client_data);
+                        io.in(agent).emit("client", client_data);
 
 
                     } else {
@@ -194,7 +194,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                 io.sockets.adapter.clients([data.to], function (err, clients) {
                     if (err) {
                         logger.error('No user available in room', err);
-                        io.to(data.to).emit("message", data);
+                        io.in(data.to).emit("message", data);
                         SaveMessage(message);
 
                     } else {
@@ -202,7 +202,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
 
                             data.id = id;
-                            io.to(data.to).emit("message", data);
+                            io.in(data.to).emit("message", data);
                             message.status = 'delivered';
 
                             SaveMessage(message);
@@ -227,7 +227,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
             if (data && socket.agent) {
                 data.from = socket.decoded_token.jti;
-                io.to(socket.agent).emit("typing", data);
+                io.in(socket.agent).emit("typing", data);
             }
 
         });
@@ -237,7 +237,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
             if (data && socket.agent) {
                 data.from = socket.decoded_token.jti;
-                io.to(socket.agent).emit("typingstoped", data);
+                io.in(socket.agent).emit("typingstoped", data);
             }
 
         });
@@ -248,7 +248,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             if (data && socket.agent && data.id) {
                 data.from = socket.decoded_token.jti;
                 data.status = 'seen';
-                io.to(socket.agent).emit("seen", data);
+                io.in(socket.agent).emit("seen", data);
                 UpdateRead(data.id);
             }
         });
@@ -259,7 +259,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                 socket.agent = data.username;
             }else{
 
-                io.to(data.username).emit("message", "Chat has routed to another user");
+                io.in(data.username).emit("message", "Chat has routed to another user");
             }
             //io.to(agent).emit("clientdata", client_data);
         });
@@ -270,10 +270,10 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
             if(!socket.agent) {
                 socket.agent = data.username;
-                io.to(agent).emit("existingclient", client_data);
+                io.in(agent).emit("existingclient", client_data);
             }else{
 
-                io.to(data.username).emit("message", "Chat has routed to another user");
+                io.in(data.username).emit("message", "Chat has routed to another user");
             }
 
         });
@@ -289,7 +289,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                     socket.agent = agent;
 
                     client_data.profile = profile;
-                    io.to(agent).emit("client", client_data);
+                    io.in(agent).emit("client", client_data);
 
 
                 } else {
@@ -309,7 +309,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
         socket.on('sessionend', function () {
 
             if (socket.agent)
-                io.to(socket.agent).emit("left", client_data);
+                io.in(socket.agent).emit("left", client_data);
 
         });
 
