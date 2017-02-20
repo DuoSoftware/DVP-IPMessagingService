@@ -189,12 +189,12 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                 });
 
 
-                io.to(data.to).emit("message", data);
+
                 console.log(data);
                 io.sockets.adapter.clients([data.to], function (err, clients) {
                     if (err) {
                         logger.error('No user available in room', err);
-                        //io.to(data.to).emit("message", data);
+                        io.to(data.to).emit("message", data);
                         SaveMessage(message);
 
                     } else {
@@ -202,7 +202,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
 
                             data.id = id;
-                            //io.to(data.to).emit("message", data);
+                            io.to(data.to).emit("message", data);
                             message.status = 'delivered';
 
                             SaveMessage(message);
