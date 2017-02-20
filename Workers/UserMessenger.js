@@ -98,7 +98,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
    console.log(socket.decoded_token.iss);
 
-    socket.join(socket.decoded_token.iss);
+
     var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
     socket.join(statusGroup);
 
@@ -147,6 +147,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
     });
 
 
+    socket.join(socket.decoded_token.iss);
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
