@@ -34,7 +34,7 @@ var ards = require('./Ards');
 
 var pub = redis(redisport, redisip, { auth_pass: redispass });
 var sub = redis(redisport, redisip, { auth_pass: redispass });
-io.adapter(adapter({ pubClient: pub, subClient: sub }));
+io.adapter(adapter({ requestsTimeout: 10000, pubClient: pub, subClient: sub }));
 
 
 var redisClient = redis(redisport,redisip,{ auth_pass: redispass });
@@ -106,188 +106,218 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
     logger.info('hello! ' + socket.decoded_token.iss);
 
-    socket.join(socket.decoded_token.jti);
-    ///////////////////////////////////////////ARDS Integration////////////////////////////////////////////////////
+
+    Common.CreateEngagement(socket.decoded_token, function(error, profile) {
+
+        socket.join(socket.decoded_token.jti);
+        ///////////////////////////////////////////ARDS Integration////////////////////////////////////////////////////
 
 
-    var status = 'setup';
-    var client_data = socket.decoded_token;
-    var otherInfo = "";
+        var status = 'setup';
+        var client_data = socket.decoded_token;
+        var otherInfo = "";
 
-    var onlineClientsUsers = util.format("%d:%d:client:online:%s",client_data.tenant,client_data.company, client_data.jti);
-    redisClient.get(onlineClientsUsers, function (err, strObj) {
-            if(strObj) {
+        var onlineClientsUsers = util.format("%d:%d:client:online:%s", client_data.tenant, client_data.company, client_data.jti);
+        redisClient.get(onlineClientsUsers, function (err, strObj) {
+            if (strObj) {
                 var obj = JSON.parse(strObj);
                 socket.agent = obj.agent;
-                io.to(obj.agent).emit("existingclient", client_data);
-            }else{
+                io.in(obj.agent).emit("existingclient", client_data);
+                socket.emit("existingagent", obj.agentdata);
+            } else {
 
                 ards.PickResource(client_data.tenant, client_data.company, client_data.jti, client_data.attributes, client_data.priority, 1, otherInfo, function (err, resource) {
 
-                    if(resource && resource.ResourceInfo) {
+                    if (resource && resource.ResourceInfo) {
+
 
                         var agent = resource.ResourceInfo.Profile;
                         socket.agent = agent;
+                        console.log("Agent is " + agent);
 
-                        io.to(agent).emit("client", client_data);
+                        client_data.profile = profile;
+
+                        io.in(agent).emit("client", client_data);
 
 
-                    }else{
+                    } else {
 
                         socket.emit('connectionerror', 'no_agent_found');
                     }
                 });
 
             }
-    });
+        });
 
-    //var agent = 'sukitha';
-    //socket.agent = agent;
-    //io.to(agent).emit("client", client_data);
+        //var agent = 'sukitha';
+        //socket.agent = agent;
+        //io.to(agent).emit("client", client_data);
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    socket.on('message', function (data) {
+        socket.on('message', function (data) {
 
-        if (data && data.message && socket.agent && data.type) {
+            if (data && data.message && socket.agent && data.type) {
 
-            logger.info(data);
-            //io.to(socket.decoded_token.iss).emit('echo', data);
-            data.from = socket.decoded_token.jti;
-            data.display = socket.decoded_token.name;
-            data.time = Date.now();
-            data.to = socket.agent;
-            data.who = 'client';
-            var id = uuid.v1();
-            //data.id;//
+                logger.info(data);
+                //io.to(socket.decoded_token.iss).emit('echo', data);
+                data.from = socket.decoded_token.jti;
+                data.display = socket.decoded_token.name;
+                data.time = Date.now();
+                data.to = socket.agent;
+                data.who = 'client';
 
-            var toRedisKey = util.format("%s:messaging:status", data.to);
-
-            var message = PersonalMessage({
-
-                type: data.type,
-                created_at: Date.now(),
-                updated_at: Date.now(),
-                status: 'pending',
-                uuid: id,
-                data: data.message,
-                session: socket.decoded_token.jti,
-                from: socket.decoded_token.jti,
-                to: data.to
-
-            });
-
-            io.sockets.adapter.clients([data.to], function (err, clients) {
-                if (err) {
-                    logger.error('No user available in room', err);
-                    io.to(data.to).emit("message", data);
-                    SaveMessage(message);
-
-                } else {
-                    if (Array.isArray(clients) && clients.length > 0) {
+                var id = uuid.v1();
+                if (data.id)
+                    id = data.id;
 
 
-                        data.id = id;
-                        io.to(data.to).emit("message", data);
-                        message.status = 'delivered';
+                var toRedisKey = util.format("%s:messaging:status", data.to);
 
+                var message = PersonalMessage({
+
+                    type: data.type,
+                    created_at: Date.now(),
+                    updated_at: Date.now(),
+                    status: 'pending',
+                    uuid: id,
+                    data: data.message,
+                    session: socket.decoded_token.jti,
+                    from: socket.decoded_token.jti,
+                    to: data.to
+
+                });
+
+
+
+                console.log(data);
+                io.sockets.adapter.clients([data.to], function (err, clients) {
+                    if (err) {
+                        logger.error('No user available in room', err);
+                        io.in(data.to).emit("message", data);
                         SaveMessage(message);
-
 
                     } else {
-                        socket.emit('connectionerror', 'no_agent_found');
-                        logger.error('No user available in room');
-                        SaveMessage(message);
+                        if (Array.isArray(clients) && clients.length > 0) {
+
+
+                            data.id = id;
+                            io.in(data.to).emit("message", data);
+                            message.status = 'delivered';
+
+                            SaveMessage(message);
+
+
+                        } else {
+                            socket.emit('connectionerror', 'no_agent_found');
+                            logger.error('No user available in room');
+                            SaveMessage(message);
+                        }
                     }
-                }
-            });
+                });
 
-        } else {
-            socket.emit('connectionerror', 'message_error');
-        }
+            } else {
+                socket.emit('connectionerror', 'message_error');
+            }
 
-    });
+        });
 
-    socket.on('typing', function (data) {
-
-
-        if (data && socket.agent) {
-            data.from = socket.decoded_token.jti;
-            io.to(socket.agent).emit("typing", data);
-        }
-
-    });
-
-    socket.on('typingstoped', function (data) {
+        socket.on('typing', function (data) {
 
 
-        if (data && socket.agent) {
-            data.from = socket.decoded_token.jti;
-            io.to(socket.agent).emit("typingstoped", data);
-        }
+            if (data && socket.agent) {
+                data.from = socket.decoded_token.jti;
+                io.in(socket.agent).emit("typing", data);
+            }
 
-    });
+        });
 
-    socket.on('seen', function (data) {
-
-
-
-        if (data && socket.agent && data.id) {
-            data.from = socket.decoded_token.jti;
-            data.status = 'seen';
-            io.to(socket.agent).emit("seen", data);
-            UpdateRead(data.id);
-        }
-    });
-
-    socket.on('agent', function(data){
-        logger.info(data);
-        //io.to(agent).emit("clientdata", client_data);
-    });
-
-    socket.on('existingagent', function(data){
-        logger.info(data);
-        io.to(agent).emit("existingclient", client_data);
-    });
+        socket.on('typingstoped', function (data) {
 
 
-    socket.on('retryagent', function () {
+            if (data && socket.agent) {
+                data.from = socket.decoded_token.jti;
+                io.in(socket.agent).emit("typingstoped", data);
+            }
 
-        ards.PickResource(client_data.tenant, client_data.company, client_data.jti, client_data.attributes, client_data.priority, 1, otherInfo, function (err, resource) {
+        });
 
-            if(resource && resource.ResourceInfo) {
-
-                var agent = resource.ResourceInfo.Profile;
-                socket.agent = agent;
-
-                io.to(agent).emit("client", client_data);
+        socket.on('seen', function (data) {
 
 
-            }else{
-                socket.emit('connectionerror', 'no_agent_found');
+            if (data && socket.agent && data.id) {
+                data.from = socket.decoded_token.jti;
+                data.status = 'seen';
+                io.in(socket.agent).emit("seen", data);
+                UpdateRead(data.id);
             }
         });
 
-    });
-    
-    socket.on('disconnect', function () {
+        socket.on('agent', function (data) {
+            logger.info(data);
+            if(!socket.agent) {
+                socket.agent = data.username;
+            }else{
 
-        //if (socket.agent)
-        //    io.to(socket.agent).emit("left", client_data);
+                io.in(data.username).emit("message", "Chat has routed to another user");
+            }
+            //io.to(agent).emit("clientdata", client_data);
+        });
 
-    });
+        socket.on('existingagent', function (data) {
+            logger.info(data);
+            //socket.agent = data.username;
 
-    socket.on('sessionend', function () {
+            if(!socket.agent) {
+                socket.agent = data.username;
+                io.in(agent).emit("existingclient", client_data);
+            }else{
 
-        if (socket.agent)
-            io.to(socket.agent).emit("left", client_data);
+                io.in(data.username).emit("message", "Chat has routed to another user");
+            }
 
-    });
+        });
 
-    socket.on('error', function(error) {
 
-        logger.error(error);
+        socket.on('retryagent', function () {
 
+            ards.PickResource(client_data.tenant, client_data.company, client_data.jti, client_data.attributes, client_data.priority, 1, otherInfo, function (err, resource) {
+
+                if (resource && resource.ResourceInfo) {
+
+                    var agent = resource.ResourceInfo.Profile;
+                    socket.agent = agent;
+
+                    client_data.profile = profile;
+                    io.in(agent).emit("client", client_data);
+
+
+                } else {
+                    socket.emit('connectionerror', 'no_agent_found');
+                }
+            });
+
+        });
+
+        socket.on('disconnect', function () {
+
+            //if (socket.agent)
+            //    io.to(socket.agent).emit("left", client_data);
+
+        });
+
+        socket.on('sessionend', function () {
+
+            if (socket.agent)
+                io.in(socket.agent).emit("left", client_data);
+
+        });
+
+        socket.on('error', function (error) {
+
+            logger.error(error);
+
+        });
     });
 });
 
