@@ -69,8 +69,6 @@ var SaveMessage = function(message){
     });
 };
 
-
-
 var UpdateRead = function(uuid){
 
     PersonalMessage.findOneAndUpdate({uuid:uuid},{status:'seen'},function (err, _message) {
@@ -98,14 +96,15 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     redisClient.set(util.format("%s:messaging:time",socket.decoded_token.iss),Date.now().toString(),redis.print);
 
-   // logger.info(socket.handshake);
+   console.log(socket.decoded_token.iss);
 
-    socket.join(socket.decoded_token.iss);
+
     var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
     socket.join(statusGroup);
 
     var fromRedisKey = util.format("%s:messaging:status", socket.decoded_token.iss);
     var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
+
 
     redisClient.get(fromRedisKey, function (errGet, resGet) {
         if (errGet) {
@@ -115,27 +114,19 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
             if (!resGet) {
 
                 logger.error('No user status found in redis');
+
             } else {
 
-                io.to(statusGroup).emit("status", resGet);
+                var statusObg = {};
+                statusObg[socket.decoded_token.iss] = resGet;
+
+                io.to(statusGroup).emit("status", statusObg);
                 redisClient.hset(onlineUsers, socket.decoded_token.iss, resGet, redis.print);
 
                 ards.GetOngoingSessions(socket.decoded_token.tenant,socket.decoded_token.company,socket.decoded_token.context.resourceid,function(err, ongoinSessions){
                     if(ongoinSessions && ongoinSessions.length >0){
                         ongoinSessions.forEach(function(session){
-                            //User.findOne({
-                            //    company: socket.decoded_token.company,
-                            //    tenant: socket.decoded_token.tenant,
-                            //    username: socket.decoded_token.iss
-                            //})
-                            //    .select("username name avatar")
-                            //    .exec(function (err, user) {
-                            //        if (err) {
-                            //
-                            //
-                            //        } else {
-                            //
-                            //            if (user) {
+
 
                             var onlineclients = util.format("%d:%d:client:online:%s",socket.decoded_token.tenant,socket.decoded_token.company,session);
                             redisClient.get(onlineclients, function(err, strObj){
@@ -148,19 +139,47 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                             });
 
-
-                                //        } else {
-                                //
-                                //        }
-                                //    }
-                                //
-                                //});
                         });
                     }
                 });
             }
         }
     });
+
+
+    socket.join(socket.decoded_token.iss);
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //var statusObg = {};
+    //statusObg[socket.decoded_token.iss] = 'online';
+    //io.to(statusGroup).emit("status", statusObg);
+    //
+    //var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
+    //redisClient.hset(onlineUsers, socket.decoded_token.iss, 'online', redis.print);
+    //
+    //ards.GetOngoingSessions(socket.decoded_token.tenant,socket.decoded_token.company,socket.decoded_token.context.resourceid,function(err, ongoinSessions){
+    //    if(ongoinSessions && ongoinSessions.length >0){
+    //        ongoinSessions.forEach(function(session){
+    //
+    //
+    //            var onlineclients = util.format("%d:%d:client:online:%s",socket.decoded_token.tenant,socket.decoded_token.company,session);
+    //            redisClient.get(onlineclients, function(err, strObj){
+    //
+    //                if(strObj){
+    //
+    //                    var obj = JSON.parse(strObj);
+    //                    socket.emit("existingclient", obj);
+    //                }
+    //
+    //            });
+    //
+    //        });
+    //    }
+    //});
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     redisClient.hgetall(onlineUsers, function (err, obj) {
         if(err){
@@ -265,7 +284,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                     tenant: socket.decoded_token.tenant,
                     username: socket.decoded_token.iss
                 })
-                .select("username name avatar")
+                .select("username name avatar firstname lastname")
                 .exec(function (err, user) {
                     if (err) {
 
@@ -274,11 +293,19 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                         if (user) {
 
-                            io.to(data.to).emit("agent", {
+                            var agentData = {
                                 username: user.username,
-                                name: user.name,
+                                name: user.firstname + "" + user.lastname,
+                                id: user.id,
                                 avatar: user.avatar
-                            });
+                            };
+
+                            if(data.profile){
+
+                                agentData.client = data.profile;
+                            }
+
+                            io.to(data.to).emit("agent", agentData);
                             var client_data = socket.decoded_token;
                             //socket.clientjti = data.to;
                             ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Connected', '','','inbound');
@@ -286,6 +313,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                             var onlineClientsUsers = util.format("%d:%d:client:online:%s",client_data.tenant,client_data.company,data.jti);
                             data.agent = socket.decoded_token.iss;
+                            data.agentdata = agentData;
                             var jsonData = JSON.stringify(data);
                             redisClient.set(onlineClientsUsers, jsonData, redis.print);
 

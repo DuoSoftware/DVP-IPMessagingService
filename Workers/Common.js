@@ -49,76 +49,17 @@ module.exports.CompanyChatSecret = function(req, payload, done){
             }
             if (!key) {
                 return done(new Error('missing_secret'));
-            }
-
-
-
-            if((config.Services && config.Services.interactionurl && config.Services.interactionport && config.Services.interactionversion)) {
-
-
-                var engagementURL = util.format("http://%s/DVP/API/%s/EngagementSessionForProfile", config.Services.interactionurl, config.Services.interactionversion);
-                if (validator.isIP(config.Services.interactionurl))
-                    engagementURL = util.format("http://%s:%d/DVP/API/%s/EngagementSessionForProfile", config.Services.interactionurl, config.Services.interactionport, config.Services.interactionversion);
-
-                var engagementData =  {
-                    "engagement_id": payload.jti,
-                    "channel": 'chat',
-                    "direction": 'inbound',
-                    "channel_from":payload.name,
-                    "channel_to": payload.iss
-                };
-
-                logger.debug("Calling Engagement service URL %s", engagementURL);
-                request({
-                    method: "POST",
-                    url: engagementURL,
-                    headers: {
-                        authorization: token,
-                        companyinfo: util.format("%d:%d", payload.tenant, payload.company)
-                    },
-                    json: engagementData
-                }, function (_error, _response, datax) {
-
-                    try {
-
-                        if (!_error && _response && _response.statusCode == 200, _response.body && _response.body.IsSuccess) {
-
-
-                            if (_response.body.Result && _response.body.Result.profile_id) {
-
-                                payload.profile = _response.body.Result.profile_id;
-                            }
-
-
-                            return done(null, key);
-
-                        }else{
-
-                            logger.error("There is an error in  create engagements for this session "+ payload.jit);
-                            //done(new Error('engagement_failed'));
-                            return done(null, key);
-
-
-                        }
-                    }
-                    catch (excep) {
-
-                        done(new Error('wrong_token_format'));
-
-                    }
-                });
             }else{
 
-                return done(new Error('missing_config'));
+                return done(null, key);
             }
-
         });
     }else{
         done(new Error('wrong token format'));
     }
 };
 
-module.exports.CreateEngagement = function (channel, company, tenant, from, to, direction, session, cb){
+module.exports.CreateEngagement = function (payload,  cb){
 
     if((config.Services && config.Services.interactionurl && config.Services.interactionport && config.Services.interactionversion)) {
 
@@ -128,12 +69,29 @@ module.exports.CreateEngagement = function (channel, company, tenant, from, to, 
             engagementURL = util.format("http://%s:%d/DVP/API/%s/EngagementSessionForProfile", config.Services.interactionurl, config.Services.interactionport, config.Services.interactionversion);
 
         var engagementData =  {
-            "engagement_id": session,
-            "channel": channel,
-            "direction": direction,
-            "channel_from":from,
-            "channel_to": to
+            "engagement_id": payload.jti,
+            "channel": 'chat',
+            "direction": 'inbound',
+            "channel_from":payload.name,
+            "channel_to": payload.iss
         };
+
+        if(payload.session_id)
+            engagementData.engagement_id = payload.session_id;
+
+
+        if(payload.channel){
+            engagementData.channel = payload.channel;
+        }
+
+        if(payload.jti){
+            engagementData.channel_id = payload.jti;
+            //req.body.channel_id
+        }
+
+        if(payload.contact){
+            engagementData.raw = payload.contact;
+        }
 
         logger.debug("Calling Engagement service URL %s", engagementURL);
         request({
@@ -141,7 +99,7 @@ module.exports.CreateEngagement = function (channel, company, tenant, from, to, 
             url: engagementURL,
             headers: {
                 authorization: token,
-                companyinfo: util.format("%d:%d", tenant, company)
+                companyinfo: util.format("%d:%d", payload.tenant, payload.company)
             },
             json: engagementData
         }, function (_error, _response, datax) {
@@ -150,23 +108,36 @@ module.exports.CreateEngagement = function (channel, company, tenant, from, to, 
 
                 if (!_error && _response && _response.statusCode == 200, _response.body && _response.body.IsSuccess) {
 
-                    cb(true,_response.body.Result);
+
+                    var profile;
+                    if (_response.body.Result && _response.body.Result.profile_id) {
+
+                        profile = _response.body.Result.profile_id;
+                    }
+
+
+                    return cb(null, profile);
 
                 }else{
 
-                    logger.error("There is an error in  create engagements for this session "+ session);
-                    cb(false,{});
+                    logger.error("There is an error in  create engagements for this session "+ payload.jit);
+                    //done(new Error('engagement_failed'));
+                    return cb(_error);
 
 
                 }
             }
             catch (excep) {
 
-                cb(false,{});
+                cb(excep);
 
             }
         });
+    }else{
+
+        return done(new Error('missing_config'));
     }
+
 }
 
 
