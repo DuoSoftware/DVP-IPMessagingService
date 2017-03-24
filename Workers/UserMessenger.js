@@ -256,16 +256,36 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
     socket.on('status',function(data){
 
-        if(data && data.presence) {
+        if(data && data.presence)
+        {
 
-            var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
-            redisClient.set(util.format("%s:messaging:status", socket.decoded_token.iss), data.presence, redis.print);
+            var statusGroup = util.format("%d:%d:messaging:status", socket.decoded_token.tenant, socket.decoded_token.company);
+
+            var statusKey = util.format("%s:messaging:status", socket.decoded_token.iss);
+
+            if (data.presence_type === 'call')
+            {
+                statusKey = util.format("%s:%s:status",  socket.decoded_token.iss, data.presence_type);
+            }
+
+            redisClient.set(statusKey, data.presence, redis.print);
             var statusObj = {};
-            statusObj[socket.decoded_token.iss] = data.presence;
-            io.to(statusGroup).emit("status", statusObj);
 
-            var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
-            redisClient.hset(onlineUsers, socket.decoded_token.iss, data.presence, redis.print);
+
+            statusObj[socket.decoded_token.iss] = data.presence;
+
+            if (data.presence_type == 'call')
+            {
+                io.to(statusGroup).emit("callstatus", statusObj);
+                var onlineUsersStatus = util.format("%d:%d:%susers:online", socket.decoded_token.tenant, socket.decoded_token.company,data.presence_type);
+                redisClient.hset(onlineUsersStatus, socket.decoded_token.iss, data.presence, redis.print);
+
+            } else {
+                io.to(statusGroup).emit("status", statusObj);
+                var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
+                redisClient.hset(onlineUsers, socket.decoded_token.iss, data.presence, redis.print);
+            }
+
 
         }else{
 
@@ -273,6 +293,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         }
 
     });
+
 
     socket.on('accept',function(data) {
 
@@ -388,6 +409,36 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
                 break;
 
+            //
+            case 'allcallstatus':
+
+
+                    var onlineUsersStatus = util.format("%d:%d:callusers:online", socket.decoded_token.tenant, socket.decoded_token.company);
+
+                    redisClient.hgetall(onlineUsersStatus, function (err, obj)
+                    {
+                        if (err)
+                        {
+                            logger.error('No users status found in redis', err);
+                        } else
+                        {
+
+                            if (obj)
+                            {
+                                socket.emit("callstatus", obj);
+                            } else
+                            {
+
+                                logger.error('No users status found in redis');
+                                socket.emit('error', {action: 'allcallstatus', message: 'no data found'});
+                            }
+                        }
+                    });
+
+
+
+                break;
+
             case 'chatstatus':
 
                 var keys = [];
@@ -417,7 +468,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                 });
 
                 break;
-
 
             case 'oldmessages':
 
