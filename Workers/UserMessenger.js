@@ -90,114 +90,81 @@ var UpdateRead = function(uuid){
     });
 };
 
-io.use(socketioJwt.authorize({secret:  secret.Secret, timeout: 15000}));
-
-//io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeout: 15000})).on('authenticated',function (socket) {
+io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeout: 15000})).on('authenticated',function (socket) {
 
 
-io.on('connection',function (socket) {
+    socket.on('connect',function(data) {
 
-    logger.info('hello! ' + socket.decoded_token.iss);
+        logger.info('hello! ' + socket.decoded_token.iss);
 
-    redisClient.set(util.format("%s:messaging:time",socket.decoded_token.iss),Date.now().toString(),redis.print);
+        redisClient.set(util.format("%s:messaging:time", socket.decoded_token.iss), Date.now().toString(), redis.print);
 
-   console.log(socket.decoded_token.iss);
-
-
-    var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
-    socket.join(statusGroup);
-
-    var fromRedisKey = util.format("%s:messaging:status", socket.decoded_token.iss);
-    var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
+        console.log(socket.decoded_token.iss);
 
 
-    redisClient.get(fromRedisKey, function (errGet, resGet) {
-        if (errGet) {
-            logger.error('No user status found in redis', errGet);
-        } else {
+        var statusGroup = util.format("%d:%d:messaging:status", socket.decoded_token.tenant, socket.decoded_token.company);
+        socket.join(statusGroup);
 
-            if (!resGet) {
+        var fromRedisKey = util.format("%s:messaging:status", socket.decoded_token.iss);
+        var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
 
-                logger.error('No user status found in redis');
 
+        redisClient.get(fromRedisKey, function (errGet, resGet) {
+            if (errGet) {
+                logger.error('No user status found in redis', errGet);
             } else {
 
-                var statusObg = {};
-                statusObg[socket.decoded_token.iss] = resGet;
+                if (!resGet) {
 
-                io.to(statusGroup).emit("status", statusObg);
-                redisClient.hset(onlineUsers, socket.decoded_token.iss, resGet, redis.print);
+                    logger.error('No user status found in redis');
 
-                ards.GetOngoingSessions(socket.decoded_token.tenant,socket.decoded_token.company,socket.decoded_token.context.resourceid,function(err, ongoinSessions){
-                    if(ongoinSessions && ongoinSessions.length >0){
-                        ongoinSessions.forEach(function(session){
+                } else {
+
+                    var statusObg = {};
+                    statusObg[socket.decoded_token.iss] = resGet;
+
+                    io.to(statusGroup).emit("status", statusObg);
+                    redisClient.hset(onlineUsers, socket.decoded_token.iss, resGet, redis.print);
+
+                    ards.GetOngoingSessions(socket.decoded_token.tenant, socket.decoded_token.company, socket.decoded_token.context.resourceid, function (err, ongoinSessions) {
+                        if (ongoinSessions && ongoinSessions.length > 0) {
+                            ongoinSessions.forEach(function (session) {
 
 
-                            var onlineclients = util.format("%d:%d:client:online:%s",socket.decoded_token.tenant,socket.decoded_token.company,session);
-                            redisClient.get(onlineclients, function(err, strObj){
+                                var onlineclients = util.format("%d:%d:client:online:%s", socket.decoded_token.tenant, socket.decoded_token.company, session);
+                                redisClient.get(onlineclients, function (err, strObj) {
 
-                                if(strObj){
+                                    if (strObj) {
 
-                                    var obj = JSON.parse(strObj);
-                                    socket.emit("existingclient", obj);
-                                }
+                                        var obj = JSON.parse(strObj);
+                                        socket.emit("existingclient", obj);
+                                    }
+
+                                });
 
                             });
-
-                        });
-                    }
-                });
+                        }
+                    });
+                }
             }
-        }
-    });
+        });
 
 
-    socket.join(socket.decoded_token.iss);
+        socket.join(socket.decoded_token.iss);
 
+        redisClient.hgetall(onlineUsers, function (err, obj) {
+            if (err) {
+                logger.error('No users status found in redis', err);
+            } else {
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+                if (obj) {
+                    io.to(socket.decoded_token.iss).emit("status", obj);
+                } else {
 
-    //var statusObg = {};
-    //statusObg[socket.decoded_token.iss] = 'online';
-    //io.to(statusGroup).emit("status", statusObg);
-    //
-    //var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
-    //redisClient.hset(onlineUsers, socket.decoded_token.iss, 'online', redis.print);
-    //
-    //ards.GetOngoingSessions(socket.decoded_token.tenant,socket.decoded_token.company,socket.decoded_token.context.resourceid,function(err, ongoinSessions){
-    //    if(ongoinSessions && ongoinSessions.length >0){
-    //        ongoinSessions.forEach(function(session){
-    //
-    //
-    //            var onlineclients = util.format("%d:%d:client:online:%s",socket.decoded_token.tenant,socket.decoded_token.company,session);
-    //            redisClient.get(onlineclients, function(err, strObj){
-    //
-    //                if(strObj){
-    //
-    //                    var obj = JSON.parse(strObj);
-    //                    socket.emit("existingclient", obj);
-    //                }
-    //
-    //            });
-    //
-    //        });
-    //    }
-    //});
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    redisClient.hgetall(onlineUsers, function (err, obj) {
-        if(err){
-            logger.error('No users status found in redis', err);
-        }else{
-
-            if(obj) {
-                io.to(socket.decoded_token.iss).emit("status", obj);
-            }else{
-
-                logger.error('No users status found in redis');
+                    logger.error('No users status found in redis');
+                }
             }
-        }
+        });
     });
 
     socket.on('message',function(data){
@@ -298,7 +265,6 @@ io.on('connection',function (socket) {
         }
 
     });
-
 
     socket.on('accept',function(data) {
 
@@ -610,8 +576,8 @@ io.on('connection',function (socket) {
         io.to(statusGroup).emit("status", statusObg);
 
         var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
-        redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
-        //redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
+        //redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
+        redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
 
         redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
     });
