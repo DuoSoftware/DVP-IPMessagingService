@@ -599,17 +599,17 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
 
         //var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
         //redisClient.del(util.format("%s:messaging:status", socket.decoded_token.iss), redis.print);
+        console.log("Bye "+socket.decoded_token.iss);
         var statusObg = {};
         statusObg[socket.decoded_token.iss] = 'offline';
         io.to(statusGroup).emit("status", statusObg);
 
         var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
-        //redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
-        redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
+        redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
+        //redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
 
         redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
     });
-
 
 
     var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
