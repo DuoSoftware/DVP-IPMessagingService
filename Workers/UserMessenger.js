@@ -90,7 +90,12 @@ var UpdateRead = function(uuid){
     });
 };
 
-io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeout: 15000})).on('authenticated',function (socket) {
+io.use(socketioJwt.authorize({secret:  secret.Secret, timeout: 15000}));
+
+//io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeout: 15000})).on('authenticated',function (socket) {
+
+
+io.on('connection',function (socket) {
 
     logger.info('hello! ' + socket.decoded_token.iss);
 
