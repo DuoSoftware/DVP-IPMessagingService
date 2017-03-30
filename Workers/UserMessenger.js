@@ -90,7 +90,8 @@ var UpdateRead = function(uuid){
     });
 };
 
-io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeout: 15000})).on('authenticated',function (socket) {
+io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeout: 15000}))
+    .on('authenticated',function (socket) {
 
 
     logger.info('hello! ' + socket.decoded_token.iss);
@@ -164,7 +165,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         }
     });
 
-    socket.on('connection',function(data) {
+    socket.on('connect',function(data) {
 
 
         redisClient.get(fromRedisKey, function (errGet, resGet) {
