@@ -90,82 +90,23 @@ var UpdateRead = function(uuid){
     });
 };
 
-io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeout: 15000}))
+io.sockets.on('connection',
+    socketioJwt.authorize({secret:  secret.Secret, timeout: 15000}))
     .on('authenticated',function (socket) {
 
 
-    logger.info('hello! ' + socket.decoded_token.iss);
+        logger.info('hello! ' + socket.decoded_token.iss);
 
-    redisClient.set(util.format("%s:messaging:time", socket.decoded_token.iss), Date.now().toString(), redis.print);
+        redisClient.set(util.format("%s:messaging:time", socket.decoded_token.iss), Date.now().toString(), redis.print);
 
-    console.log(socket.decoded_token.iss);
-
-
-    var statusGroup = util.format("%d:%d:messaging:status", socket.decoded_token.tenant, socket.decoded_token.company);
-    socket.join(statusGroup);
-
-    var fromRedisKey = util.format("%s:messaging:status", socket.decoded_token.iss);
-    var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
+        console.log(socket.decoded_token.iss);
 
 
-    redisClient.get(fromRedisKey, function (errGet, resGet) {
-        if (errGet) {
-            logger.error('No user status found in redis', errGet);
-        } else {
+        var statusGroup = util.format("%d:%d:messaging:status", socket.decoded_token.tenant, socket.decoded_token.company);
+        socket.join(statusGroup);
 
-            if (!resGet) {
-
-                logger.error('No user status found in redis');
-
-            } else {
-
-                var statusObg = {};
-                statusObg[socket.decoded_token.iss] = resGet;
-
-                io.to(statusGroup).emit("status", statusObg);
-                redisClient.hset(onlineUsers, socket.decoded_token.iss, resGet, redis.print);
-
-                ards.GetOngoingSessions(socket.decoded_token.tenant, socket.decoded_token.company, socket.decoded_token.context.resourceid, function (err, ongoinSessions) {
-                    if (ongoinSessions && ongoinSessions.length > 0) {
-                        ongoinSessions.forEach(function (session) {
-
-
-                            var onlineclients = util.format("%d:%d:client:online:%s", socket.decoded_token.tenant, socket.decoded_token.company, session);
-                            redisClient.get(onlineclients, function (err, strObj) {
-
-                                if (strObj) {
-
-                                    var obj = JSON.parse(strObj);
-                                    socket.emit("existingclient", obj);
-                                }
-
-                            });
-
-                        });
-                    }
-                });
-            }
-        }
-    });
-
-
-    socket.join(socket.decoded_token.iss);
-
-    redisClient.hgetall(onlineUsers, function (err, obj) {
-        if (err) {
-            logger.error('No users status found in redis', err);
-        } else {
-
-            if (obj) {
-                io.to(socket.decoded_token.iss).emit("status", obj);
-            } else {
-
-                logger.error('No users status found in redis');
-            }
-        }
-    });
-
-    socket.on('connect',function(data) {
+        var fromRedisKey = util.format("%s:messaging:status", socket.decoded_token.iss);
+        var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
 
 
         redisClient.get(fromRedisKey, function (errGet, resGet) {
@@ -185,244 +126,306 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                     io.to(statusGroup).emit("status", statusObg);
                     redisClient.hset(onlineUsers, socket.decoded_token.iss, resGet, redis.print);
 
+                    ards.GetOngoingSessions(socket.decoded_token.tenant, socket.decoded_token.company, socket.decoded_token.context.resourceid, function (err, ongoinSessions) {
+                        if (ongoinSessions && ongoinSessions.length > 0) {
+                            ongoinSessions.forEach(function (session) {
+
+
+                                var onlineclients = util.format("%d:%d:client:online:%s", socket.decoded_token.tenant, socket.decoded_token.company, session);
+                                redisClient.get(onlineclients, function (err, strObj) {
+
+                                    if (strObj) {
+
+                                        var obj = JSON.parse(strObj);
+                                        socket.emit("existingclient", obj);
+                                    }
+
+                                });
+
+                            });
+                        }
+                    });
                 }
             }
         });
 
-    });
 
-    socket.on('message',function(data){
+        socket.join(socket.decoded_token.iss);
 
-        if(data && data.to && data.message && data.type &&  data.id) {
+        redisClient.hgetall(onlineUsers, function (err, obj) {
+            if (err) {
+                logger.error('No users status found in redis', err);
+            } else {
 
-            logger.info(data);
-            //io.to(socket.decoded_token.iss).emit('echo', data);
-            data.from = socket.decoded_token.iss;
-            data.time = Date.now();
-            data.uuid = data.id;
-            data.status = 'pending';
-            var id = data.id;//uuid.v1();
+                if (obj) {
+                    io.to(socket.decoded_token.iss).emit("status", obj);
+                } else {
 
-            var toRedisKey = util.format("%s:messaging:status", data.to);
+                    logger.error('No users status found in redis');
+                }
+            }
+        });
 
-            var message = PersonalMessage({
-
-                type: data.type,
-                created_at: Date.now(),
-                updated_at: Date.now(),
-                status: 'pending',
-                uuid: id,
-                data:  data.message,
-                from: socket.decoded_token.iss,
-                to: data.to
-
-            });
-
-            io.sockets.adapter.clients( [data.to], function (err, clients) {
-                if (err) {
-                    socket.emit('seen', {from: data.to, to:socket.decoded_token.iss, id: id, status: 'nouser'});
-                    io.to(data.to).emit("message", data);
-                    logger.error('No user available in room',err);
-                    SaveMessage(message);
-
-                }else{
-                    if(Array.isArray(clients) && clients.length > 0) {
+        socket.on('connect', function (data) {
 
 
-                        data.status = 'delivered';
-                        data.id = id;
-                        io.to(data.to).emit("message", data);
-                        socket.emit('seen', {from: data.to, to:socket.decoded_token.iss, id: id, status: 'delivered'});
-                        message.status = 'delivered';
+            redisClient.get(fromRedisKey, function (errGet, resGet) {
+                if (errGet) {
+                    logger.error('No user status found in redis', errGet);
+                } else {
 
-                        SaveMessage(message);
+                    if (!resGet) {
 
-                    }else{
+                        logger.error('No user status found in redis');
 
-                        socket.emit('seen', {from: data.to, to:socket.decoded_token.iss, id: id, status: 'nouser'});
-                        logger.error('No user available in room');
-                        SaveMessage(message);
+                    } else {
+
+                        var statusObg = {};
+                        statusObg[socket.decoded_token.iss] = resGet;
+
+                        io.to(statusGroup).emit("status", statusObg);
+                        redisClient.hset(onlineUsers, socket.decoded_token.iss, resGet, redis.print);
+
                     }
                 }
             });
 
-        }
+        });
 
-    });
+        socket.on('message', function (data) {
 
-    socket.on('status',function(data){
+            if (data && data.to && data.message && data.type && data.id) {
 
-        if(data && data.presence)
-        {
+                logger.info(data);
+                //io.to(socket.decoded_token.iss).emit('echo', data);
+                data.from = socket.decoded_token.iss;
+                data.time = Date.now();
+                data.uuid = data.id;
+                data.status = 'pending';
+                var id = data.id;//uuid.v1();
 
-            var statusGroup = util.format("%d:%d:messaging:status", socket.decoded_token.tenant, socket.decoded_token.company);
+                var toRedisKey = util.format("%s:messaging:status", data.to);
 
-            var statusKey = util.format("%s:messaging:status", socket.decoded_token.iss);
+                var message = PersonalMessage({
 
-            if (data.presence_type === 'call')
-            {
-                statusKey = util.format("%s:%s:status",  socket.decoded_token.iss, data.presence_type);
+                    type: data.type,
+                    created_at: Date.now(),
+                    updated_at: Date.now(),
+                    status: 'pending',
+                    uuid: id,
+                    data: data.message,
+                    from: socket.decoded_token.iss,
+                    to: data.to
+
+                });
+
+                io.sockets.adapter.clients([data.to], function (err, clients) {
+                    if (err) {
+                        socket.emit('seen', {from: data.to, to: socket.decoded_token.iss, id: id, status: 'nouser'});
+                        io.to(data.to).emit("message", data);
+                        logger.error('No user available in room', err);
+                        SaveMessage(message);
+
+                    } else {
+                        if (Array.isArray(clients) && clients.length > 0) {
+
+
+                            data.status = 'delivered';
+                            data.id = id;
+                            io.to(data.to).emit("message", data);
+                            socket.emit('seen', {
+                                from: data.to,
+                                to: socket.decoded_token.iss,
+                                id: id,
+                                status: 'delivered'
+                            });
+                            message.status = 'delivered';
+
+                            SaveMessage(message);
+
+                        } else {
+
+                            socket.emit('seen', {
+                                from: data.to,
+                                to: socket.decoded_token.iss,
+                                id: id,
+                                status: 'nouser'
+                            });
+                            logger.error('No user available in room');
+                            SaveMessage(message);
+                        }
+                    }
+                });
+
             }
 
-            redisClient.set(statusKey, data.presence, redis.print);
-            var statusObj = {};
+        });
+
+        socket.on('status', function (data) {
+
+            if (data && data.presence) {
+
+                var statusGroup = util.format("%d:%d:messaging:status", socket.decoded_token.tenant, socket.decoded_token.company);
+
+                var statusKey = util.format("%s:messaging:status", socket.decoded_token.iss);
+
+                if (data.presence_type === 'call') {
+                    statusKey = util.format("%s:%s:status", socket.decoded_token.iss, data.presence_type);
+                }
+
+                redisClient.set(statusKey, data.presence, redis.print);
+                var statusObj = {};
 
 
-            statusObj[socket.decoded_token.iss] = data.presence;
+                statusObj[socket.decoded_token.iss] = data.presence;
 
-            if (data.presence_type == 'call')
-            {
-                io.to(statusGroup).emit("callstatus", statusObj);
-                var onlineUsersStatus = util.format("%d:%d:%susers:online", socket.decoded_token.tenant, socket.decoded_token.company,data.presence_type);
-                redisClient.hset(onlineUsersStatus, socket.decoded_token.iss, data.presence, redis.print);
+                if (data.presence_type == 'call') {
+                    io.to(statusGroup).emit("callstatus", statusObj);
+                    var onlineUsersStatus = util.format("%d:%d:%susers:online", socket.decoded_token.tenant, socket.decoded_token.company, data.presence_type);
+                    redisClient.hset(onlineUsersStatus, socket.decoded_token.iss, data.presence, redis.print);
+
+                } else {
+                    io.to(statusGroup).emit("status", statusObj);
+                    var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
+                    redisClient.hset(onlineUsers, socket.decoded_token.iss, data.presence, redis.print);
+                }
+
 
             } else {
-                io.to(statusGroup).emit("status", statusObj);
-                var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
-                redisClient.hset(onlineUsers, socket.decoded_token.iss, data.presence, redis.print);
+
+                socket.emit('connectionerror', {action: 'status', message: 'incorrect data'});
             }
 
+        });
 
-        }else{
+        socket.on('accept', function (data) {
 
-            socket.emit('connectionerror',{action:'status', message: 'incorrect data'});
-        }
-
-    });
-
-    socket.on('accept',function(data) {
-
-        if (data && data.to) {
+            if (data && data.to) {
 
 
-            User.findOne({
-                    company: socket.decoded_token.company,
-                    tenant: socket.decoded_token.tenant,
-                    username: socket.decoded_token.iss
-                })
-                .select("username name avatar firstname lastname")
-                .exec(function (err, user) {
-                    if (err) {
+                User.findOne({
+                        company: socket.decoded_token.company,
+                        tenant: socket.decoded_token.tenant,
+                        username: socket.decoded_token.iss
+                    })
+                    .select("username name avatar firstname lastname")
+                    .exec(function (err, user) {
+                        if (err) {
 
 
-                    } else {
+                        } else {
 
-                        if (user) {
+                            if (user) {
 
-                            var agentData = {
-                                username: user.username,
-                                name: user.firstname + "" + user.lastname,
-                                id: user.id,
-                                avatar: user.avatar
-                            };
+                                var agentData = {
+                                    username: user.username,
+                                    name: user.firstname + "" + user.lastname,
+                                    id: user.id,
+                                    avatar: user.avatar
+                                };
 
-                            if(data.profile){
+                                if (data.profile) {
 
-                                agentData.client = data.profile;
+                                    agentData.client = data.profile;
+                                }
+
+                                io.to(data.to).emit("agent", agentData);
+                                var client_data = socket.decoded_token;
+                                //socket.clientjti = data.to;
+                                ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Connected', '', '', 'inbound');
+
+
+                                var onlineClientsUsers = util.format("%d:%d:client:online:%s", client_data.tenant, client_data.company, data.jti);
+                                data.agent = socket.decoded_token.iss;
+                                data.agentdata = agentData;
+                                var jsonData = JSON.stringify(data);
+                                redisClient.set(onlineClientsUsers, jsonData, redis.print);
+
+                            } else {
+
                             }
+                        }
 
-                            io.to(data.to).emit("agent", agentData);
-                            var client_data = socket.decoded_token;
-                            //socket.clientjti = data.to;
-                            ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Connected', '','','inbound');
+                    });
+            }
 
+        });
 
-                            var onlineClientsUsers = util.format("%d:%d:client:online:%s",client_data.tenant,client_data.company,data.jti);
-                            data.agent = socket.decoded_token.iss;
-                            data.agentdata = agentData;
-                            var jsonData = JSON.stringify(data);
-                            redisClient.set(onlineClientsUsers, jsonData, redis.print);
+        socket.on('reject', function (data) {
 
+            if (data && data.to) {
+                var client_data = socket.decoded_token;
+                io.to(data.to).emit("agent_reject", client_data);
+            }
+
+        });
+
+        socket.on('sessionend', function (data) {
+
+            if (data && data.to) {
+                var client_data = socket.decoded_token;
+                io.to(data.to).emit("left", client_data);
+
+                ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
+
+                var onlineClientsUsers = util.format("%d:%d:client:online:%s", client_data.tenant, client_data.company, data.to);
+                redisClient.del(onlineClientsUsers, redis.print);
+            }
+        });
+
+        socket.on('typing', function (data) {
+
+            if (data && data.to) {
+                data.from = socket.decoded_token.iss;
+                io.to(data.to).emit("typing", data);
+            }
+
+        });
+
+        socket.on('typingstoped', function (data) {
+
+            if (data && data.to) {
+                data.from = socket.decoded_token.iss;
+                io.to(data.to).emit("typingstoped", data);
+            }
+
+        });
+
+        socket.on('request', function (data) {
+
+            switch (data.request) {
+                case 'allstatus':
+                    redisClient.hgetall(onlineUsers, function (err, obj) {
+                        if (err) {
+                            logger.error('No users status found in redis', err);
                         } else {
 
+                            if (obj) {
+                                socket.emit("status", obj);
+                            } else {
+
+                                logger.error('No users status found in redis');
+                                socket.emit('error', {action: 'allstatus', message: 'no data found'});
+                            }
                         }
-                    }
+                    });
 
-                });
-        }
+                    break;
 
-    });
-
-    socket.on('reject',function(data) {
-
-        if (data && data.to) {
-            var client_data = socket.decoded_token;
-            io.to(data.to).emit("agent_reject", client_data);
-        }
-
-    });
-
-    socket.on('sessionend',function(data){
-
-        if(data && data.to) {
-            var client_data = socket.decoded_token;
-            io.to(data.to).emit("left", client_data);
-
-            ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
-
-            var onlineClientsUsers = util.format("%d:%d:client:online:%s",client_data.tenant,client_data.company, data.to);
-            redisClient.del(onlineClientsUsers, redis.print);
-        }
-    });
-
-    socket.on('typing',function(data){
-
-        if(data && data.to) {
-            data.from = socket.decoded_token.iss;
-            io.to(data.to).emit("typing", data);
-        }
-
-    });
-
-    socket.on('typingstoped',function(data){
-
-        if(data && data.to) {
-            data.from = socket.decoded_token.iss;
-            io.to(data.to).emit("typingstoped", data);
-        }
-
-    });
-
-    socket.on('request',function(data){
-
-        switch(data.request) {
-            case 'allstatus':
-                redisClient.hgetall(onlineUsers, function (err, obj) {
-                    if (err) {
-                        logger.error('No users status found in redis', err);
-                    } else {
-
-                        if (obj) {
-                            socket.emit("status", obj);
-                        } else {
-
-                            logger.error('No users status found in redis');
-                            socket.emit('error',{action:'allstatus', message: 'no data found'});
-                        }
-                    }
-                });
-
-                break;
-
-            //
-            case 'allcallstatus':
+                //
+                case 'allcallstatus':
 
 
                     var onlineUsersStatus = util.format("%d:%d:callusers:online", socket.decoded_token.tenant, socket.decoded_token.company);
 
-                    redisClient.hgetall(onlineUsersStatus, function (err, obj)
-                    {
-                        if (err)
-                        {
+                    redisClient.hgetall(onlineUsersStatus, function (err, obj) {
+                        if (err) {
                             logger.error('No users status found in redis', err);
-                        } else
-                        {
+                        } else {
 
-                            if (obj)
-                            {
+                            if (obj) {
                                 socket.emit("callstatus", obj);
-                            } else
-                            {
+                            } else {
 
                                 logger.error('No users status found in redis');
                                 socket.emit('error', {action: 'allcallstatus', message: 'no data found'});
@@ -431,238 +434,254 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
                     });
 
 
+                    break;
 
-                break;
+                case 'chatstatus':
 
-            case 'chatstatus':
-
-                var keys = [];
-                keys.push( util.format("%s:messaging:status", data.from));
-                keys.push( util.format("%s:messaging:time", data.from));
-                keys.push( util.format("%s:messaging:lastseen", data.from));
-                redisClient.mget(keys, function (err, obj) {
-                    if (err) {
-                        logger.error('No users status found in redis', err);
-                    } else {
-
-                        if (obj && Array.isArray(obj) && obj.length > 2) {
-
-                            var useChatObj = {};
-                            useChatObj.from = data.from;
-                            useChatObj.status = obj[0];
-                            useChatObj.time = obj[1];
-                            useChatObj.lastseen = obj[2];
-
-                            socket.emit("chatstatus", useChatObj);
+                    var keys = [];
+                    keys.push(util.format("%s:messaging:status", data.from));
+                    keys.push(util.format("%s:messaging:time", data.from));
+                    keys.push(util.format("%s:messaging:lastseen", data.from));
+                    redisClient.mget(keys, function (err, obj) {
+                        if (err) {
+                            logger.error('No users status found in redis', err);
                         } else {
 
-                            logger.error('No users status found in redis');
-                            socket.emit('error',{action:'status', message: 'no data found'});
-                        }
-                    }
-                });
+                            if (obj && Array.isArray(obj) && obj.length > 2) {
 
-                break;
+                                var useChatObj = {};
+                                useChatObj.from = data.from;
+                                useChatObj.status = obj[0];
+                                useChatObj.time = obj[1];
+                                useChatObj.lastseen = obj[2];
 
-            case 'oldmessages':
+                                socket.emit("chatstatus", useChatObj);
+                            } else {
 
-                var from = data.from;
-                var to = data.to;
-                var id = data.uuid;
-                PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
-
-                    if (obj) {
-
-                        PersonalMessage.find({
-                            created_at: {$lt: obj.created_at},
-                            $or: [{from: from, to: to}, {from: to, to: from}]
-                        }).sort({created_at: -1}).limit(10)
-                            .exec(function (err, oldmessages) {
-
-                                if (oldmessages) {
-                                    socket.emit("oldmessages", oldmessages);
-                                }else{
-
-                                    logger.error('No old message found');
-                                    socket.emit('connectionerror',{action:'oldmessages', data:data ,message: 'no data found'});
-                                }
-                            })
-                    }
-                });
-
-                break;
-
-            case 'newmessages':
-
-                var from = data.from;
-                var to = data.to;
-                var id = data.uuid;
-                PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
-
-                    if (obj) {
-
-                        PersonalMessage.find({
-                            created_at: {$gt: obj.created_at},
-                            $or: [{from: from, to: to}, {from: to, to: from}]
-                        }).sort({created_at: 1}).limit(10)
-                            .exec(function (err, newmessages) {
-
-                                if (data) {
-                                    io.to(socket.decoded_token.iss).emit("newmessages", newmessages);
-                                }else{
-                                    logger.error('No new message found');
-                                    socket.emit('connectionerror',{action:'newmessages', data:data ,message: 'no data found'});
-                                }
-                            })
-                    }
-                });
-
-                break;
-
-
-            case 'latestmessages':
-
-                var from = data.from;
-                var to = socket.decoded_token.iss;
-                //var id = data.uuid;
-
-                PersonalMessage.find({
-                    $or: [{from: from, to: to}, {from: to, to: from}]
-                }).sort({created_at: -1}).limit(10)
-                    .exec(function (err, latestmessages) {
-
-                        if (latestmessages && Array.isArray(latestmessages)) {
-                            io.to(socket.decoded_token.iss).emit("latestmessages", {from:data.from, messages:latestmessages.reverse()});
-                        }else{
-                            logger.error('No new message found');
-                            socket.emit('connectionerror',{action:'latestmessages', data:data ,message: 'no data found'});
+                                logger.error('No users status found in redis');
+                                socket.emit('error', {action: 'status', message: 'no data found'});
+                            }
                         }
                     });
 
-                break;
+                    break;
 
-            case 'pendingall':
-                
-                var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
+                case 'oldmessages':
 
-                var aggregator = [{
-                    $match: queryObject
-                },{
-                    $group: {
-                        _id: "$from",
-                        messages: {$sum: 1}
-                    }
-                }
-                ];
+                    var from = data.from;
+                    var to = data.to;
+                    var id = data.uuid;
+                    PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
 
-                PersonalMessage.aggregate(aggregator,function (err, messages) {
-                    if (err) {
+                        if (obj) {
 
-                        logger.error('Get personal messages failed',err);
-                    }
-                    else {
-                        if(messages) {
+                            PersonalMessage.find({
+                                created_at: {$lt: obj.created_at},
+                                $or: [{from: from, to: to}, {from: to, to: from}]
+                            }).sort({created_at: -1}).limit(10)
+                                .exec(function (err, oldmessages) {
 
-                            io.to(socket.decoded_token.iss).emit("pending", messages);
+                                    if (oldmessages) {
+                                        socket.emit("oldmessages", oldmessages);
+                                    } else {
+
+                                        logger.error('No old message found');
+                                        socket.emit('connectionerror', {
+                                            action: 'oldmessages',
+                                            data: data,
+                                            message: 'no data found'
+                                        });
+                                    }
+                                })
+                        }
+                    });
+
+                    break;
+
+                case 'newmessages':
+
+                    var from = data.from;
+                    var to = data.to;
+                    var id = data.uuid;
+                    PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
+
+                        if (obj) {
+
+                            PersonalMessage.find({
+                                created_at: {$gt: obj.created_at},
+                                $or: [{from: from, to: to}, {from: to, to: from}]
+                            }).sort({created_at: 1}).limit(10)
+                                .exec(function (err, newmessages) {
+
+                                    if (data) {
+                                        io.to(socket.decoded_token.iss).emit("newmessages", newmessages);
+                                    } else {
+                                        logger.error('No new message found');
+                                        socket.emit('connectionerror', {
+                                            action: 'newmessages',
+                                            data: data,
+                                            message: 'no data found'
+                                        });
+                                    }
+                                })
+                        }
+                    });
+
+                    break;
+
+
+                case 'latestmessages':
+
+                    var from = data.from;
+                    var to = socket.decoded_token.iss;
+                    //var id = data.uuid;
+
+                    PersonalMessage.find({
+                        $or: [{from: from, to: to}, {from: to, to: from}]
+                    }).sort({created_at: -1}).limit(10)
+                        .exec(function (err, latestmessages) {
+
+                            if (latestmessages && Array.isArray(latestmessages)) {
+                                io.to(socket.decoded_token.iss).emit("latestmessages", {
+                                    from: data.from,
+                                    messages: latestmessages.reverse()
+                                });
+                            } else {
+                                logger.error('No new message found');
+                                socket.emit('connectionerror', {
+                                    action: 'latestmessages',
+                                    data: data,
+                                    message: 'no data found'
+                                });
+                            }
+                        });
+
+                    break;
+
+                case 'pendingall':
+
+                    var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
+
+                    var aggregator = [{
+                        $match: queryObject
+                    }, {
+                        $group: {
+                            _id: "$from",
+                            messages: {$sum: 1}
                         }
                     }
-                });
+                    ];
 
-                break;
+                    PersonalMessage.aggregate(aggregator, function (err, messages) {
+                        if (err) {
 
-        }
+                            logger.error('Get personal messages failed', err);
+                        }
+                        else {
+                            if (messages) {
 
-    });
+                                io.to(socket.decoded_token.iss).emit("pending", messages);
+                            }
+                        }
+                    });
 
-    socket.on('event',function(data){
+                    break;
 
-        logger.info(data);
+            }
 
-    });
+        });
 
-    socket.on('seen',function(data){
+        socket.on('event', function (data) {
 
-        if(data && data.to && data.id) {
-            data.from = socket.decoded_token.iss;
-            data.status = 'seen';
-            io.to(data.to).emit("seen", data);
-            UpdateRead(data.id);
-        }
-    });
+            logger.info(data);
 
-    socket.on('disconnect', function(){
+        });
 
-        //var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
-        //redisClient.del(util.format("%s:messaging:status", socket.decoded_token.iss), redis.print);
-        console.log("Bye "+socket.decoded_token.iss);
-        var statusObg = {};
-        statusObg[socket.decoded_token.iss] = 'offline';
-        io.to(statusGroup).emit("status", statusObg);
+        socket.on('seen', function (data) {
 
-        var onlineUsers = util.format("%d:%d:users:online",socket.decoded_token.tenant,socket.decoded_token.company);
-        //redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
-        redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
+            if (data && data.to && data.id) {
+                data.from = socket.decoded_token.iss;
+                data.status = 'seen';
+                io.to(data.to).emit("seen", data);
+                UpdateRead(data.id);
+            }
+        });
 
-        redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
-    });
+        socket.on('disconnect', function () {
+
+            //var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
+            //redisClient.del(util.format("%s:messaging:status", socket.decoded_token.iss), redis.print);
+            console.log("Bye " + socket.decoded_token.iss);
+            var statusObg = {};
+            statusObg[socket.decoded_token.iss] = 'offline';
+            io.to(statusGroup).emit("status", statusObg);
+
+            var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
+            //redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
+            redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
+
+            redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
+
+            socket.close();
+        });
 
 
-    var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
+        var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
 
-    var aggregator = [{
-        $match: queryObject
-    },{
-        $group: {
-            _id: "$from",
-            messages: {$sum: 1}
-        }
-    }
-    ];
-
-    PersonalMessage.aggregate(aggregator,function (err, messages) {
-        if (err) {
-
-            logger.error('Get personal messages failed',err);
-        }
-        else {
-            if(messages) {
-
-                io.to(socket.decoded_token.iss).emit("pending", messages);
+        var aggregator = [{
+            $match: queryObject
+        }, {
+            $group: {
+                _id: "$from",
+                messages: {$sum: 1}
             }
         }
-    });
+        ];
 
+        PersonalMessage.aggregate(aggregator, function (err, messages) {
+            if (err) {
 
-    /*
-    PersonalMessage.find(queryObject, function (err, messages) {
-        if (err) {
-
-            logger.error('Get personal messages failed',err);
-        }
-        else {
-            if(Array.isArray(messages) && messages.length > 0) {
-
-                messages.forEach(function(message){
-
-                    var _message = {
-                        from:message.from,
-                        to:message.to,
-                        message: message.data,
-                        id: message.uuid
-                    };
-
-                    io.to(message.to).emit("message", _message);
-                    message.status = 'delivered';
-
-                    SaveMessage(message);
-
-
-                });
+                logger.error('Get personal messages failed', err);
             }
-        }
+            else {
+                if (messages) {
+
+                    io.to(socket.decoded_token.iss).emit("pending", messages);
+                }
+            }
+        });
+
+
+        /*
+         PersonalMessage.find(queryObject, function (err, messages) {
+         if (err) {
+
+         logger.error('Get personal messages failed',err);
+         }
+         else {
+         if(Array.isArray(messages) && messages.length > 0) {
+
+         messages.forEach(function(message){
+
+         var _message = {
+         from:message.from,
+         to:message.to,
+         message: message.data,
+         id: message.uuid
+         };
+
+         io.to(message.to).emit("message", _message);
+         message.status = 'delivered';
+
+         SaveMessage(message);
+
+
+         });
+         }
+         }
+         });
+
+         */
+
+
     });
-
-    */
-
-
-});
