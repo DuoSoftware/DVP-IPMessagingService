@@ -607,7 +607,9 @@ io.sockets.on('connection',
             }
         });
 
-        socket.on('disconnect', function () {
+        socket.on('disconnect', function (reason) {
+
+            console.log(reason);
 
             //var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
             //redisClient.del(util.format("%s:messaging:status", socket.decoded_token.iss), redis.print);
@@ -622,7 +624,9 @@ io.sockets.on('connection',
 
             redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
 
-            socket.close();
+
+
+
         });
 
 
