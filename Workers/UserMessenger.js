@@ -164,7 +164,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  secret.Secret, timeou
         }
     });
 
-    socket.on('connect',function(data) {
+    socket.on('connection',function(data) {
 
 
         redisClient.get(fromRedisKey, function (errGet, resGet) {
