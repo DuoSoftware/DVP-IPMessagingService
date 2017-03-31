@@ -629,7 +629,7 @@ io.sockets.on('connection',
                 } else {
                     if (Array.isArray(clients) && clients.length > 0) {
 
-                        logger.info("There are users are available");
+                        logger.info("There are users available so keeping user online");
 
                     } else {
 
