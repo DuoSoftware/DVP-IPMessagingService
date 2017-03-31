@@ -251,7 +251,7 @@ io.sockets.on('connection',
                                 id: id,
                                 status: 'nouser'
                             });
-                            logger.error('No user available in room');
+                            logger.error('No user available in room \n');
                             SaveMessage(message);
                         }
                     }
@@ -609,20 +609,45 @@ io.sockets.on('connection',
 
         socket.on('disconnect', function (reason) {
 
-            console.log(reason);
 
-            //var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
-            //redisClient.del(util.format("%s:messaging:status", socket.decoded_token.iss), redis.print);
-            console.log("Bye " + socket.decoded_token.iss);
-            var statusObg = {};
-            statusObg[socket.decoded_token.iss] = 'offline';
-            io.to(statusGroup).emit("status", statusObg);
 
-            var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
-            //redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
-            redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
+            console.log("Bye " + socket.decoded_token.iss + " Reason: "+reason);
 
-            redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
+
+            io.sockets.adapter.clients([data.to], function (err, clients) {
+                if (err) {
+
+                    logger.error('No user available in room :', err);
+                    var statusObg = {};
+                    statusObg[socket.decoded_token.iss] = 'offline';
+                    io.to(statusGroup).emit("status", statusObg);
+                    var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
+                    redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
+                    redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
+
+
+                } else {
+                    if (Array.isArray(clients) && clients.length > 0) {
+
+                        logger.info("There are users are available");
+
+                    } else {
+
+
+                        logger.debug('No user available in room');
+
+                        var statusObg = {};
+                        statusObg[socket.decoded_token.iss] = 'offline';
+                        io.to(statusGroup).emit("status", statusObg);
+                        var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
+                        redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
+                        redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
+
+                    }
+                }
+            });
+
+
 
 
 
