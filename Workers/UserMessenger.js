@@ -614,7 +614,7 @@ io.sockets.on('connection',
             console.log("Bye " + socket.decoded_token.iss + " Reason: "+reason);
 
 
-            io.sockets.adapter.clients([data.to], function (err, clients) {
+            io.sockets.adapter.clients([ socket.decoded_token.iss], function (err, clients) {
                 if (err) {
 
                     logger.error('No user available in room :', err);
