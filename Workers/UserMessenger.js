@@ -468,9 +468,10 @@ io.sockets.on('connection',
 
                 case 'oldmessages':
 
+                    var requester = data.requester;
                     var from = data.from;
                     var to = data.to;
-                    var id = data.uuid;
+                    var id = data.id;
                     PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
 
                         if (obj) {
@@ -478,16 +479,17 @@ io.sockets.on('connection',
                             PersonalMessage.find({
                                 created_at: {$lt: obj.created_at},
                                 $or: [{from: from, to: to}, {from: to, to: from}]
-                            }).sort({created_at: -1}).limit(10)
+                            }).sort({created_at: -1}).limit(100)
                                 .exec(function (err, oldmessages) {
 
                                     if (oldmessages) {
-                                        socket.emit("oldmessages", oldmessages);
+                                        socket.emit("oldmessages", {from:requester, messages:oldmessages});
                                     } else {
 
                                         logger.error('No old message found');
                                         socket.emit('connectionerror', {
                                             action: 'oldmessages',
+                                            from:requester,
                                             data: data,
                                             message: 'no data found'
                                         });
@@ -502,7 +504,7 @@ io.sockets.on('connection',
 
                     var from = data.from;
                     var to = data.to;
-                    var id = data.uuid;
+                    var id = data.id;
                     PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
 
                         if (obj) {
@@ -510,7 +512,7 @@ io.sockets.on('connection',
                             PersonalMessage.find({
                                 created_at: {$gt: obj.created_at},
                                 $or: [{from: from, to: to}, {from: to, to: from}]
-                            }).sort({created_at: 1}).limit(10)
+                            }).sort({created_at: 1}).limit(100)
                                 .exec(function (err, newmessages) {
 
                                     if (data) {
@@ -538,7 +540,7 @@ io.sockets.on('connection',
 
                     PersonalMessage.find({
                         $or: [{from: from, to: to}, {from: to, to: from}]
-                    }).sort({created_at: -1}).limit(10)
+                    }).sort({created_at: -1}).limit(100)
                         .exec(function (err, latestmessages) {
 
                             if (latestmessages && Array.isArray(latestmessages)) {
@@ -646,11 +648,6 @@ io.sockets.on('connection',
                     }
                 }
             });
-
-
-
-
-
 
         });
 
