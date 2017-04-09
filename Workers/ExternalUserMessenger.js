@@ -116,6 +116,8 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
         var status = 'setup';
         var client_data = socket.decoded_token;
         var otherInfo = "";
+        socket.message_buffer = [];
+
 
         var onlineClientsUsers = util.format("%d:%d:client:online:%s", client_data.tenant, client_data.company, client_data.jti);
         redisClient.get(onlineClientsUsers, function (err, strObj) {
@@ -157,65 +159,73 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
         socket.on('message', function (data) {
 
-            if (data && data.message && socket.agent && data.type) {
-
-                logger.info(data);
-                //io.to(socket.decoded_token.iss).emit('echo', data);
-                data.from = socket.decoded_token.jti;
-                data.display = socket.decoded_token.name;
-                data.time = Date.now();
-                data.to = socket.agent;
-                data.who = 'client';
-
-                var id = uuid.v1();
-                if (data.id)
-                    id = data.id;
-
-
-                var toRedisKey = util.format("%s:messaging:status", data.to);
-
-                var message = PersonalMessage({
-
-                    type: data.type,
-                    created_at: Date.now(),
-                    updated_at: Date.now(),
-                    status: 'pending',
-                    uuid: id,
-                    data: data.message,
-                    session: socket.decoded_token.jti,
-                    from: socket.decoded_token.jti,
-                    to: data.to
-
-                });
+            if (data && data.message && data.type) {
 
 
 
-                console.log(data);
-                io.sockets.adapter.clients([data.to], function (err, clients) {
-                    if (err) {
-                        logger.error('No user available in room', err);
-                        io.in(data.to).emit("message", data);
-                        SaveMessage(message);
+                if(socket.agent ){
 
-                    } else {
-                        if (Array.isArray(clients) && clients.length > 0) {
+                    logger.info(data);
+                    //io.to(socket.decoded_token.iss).emit('echo', data);
+                    data.from = socket.decoded_token.jti;
+                    data.display = socket.decoded_token.name;
+                    data.time = Date.now();
+                    data.to = socket.agent;
+                    data.who = 'client';
+
+                    var id = uuid.v1();
+                    if (data.id)
+                        id = data.id;
 
 
-                            data.id = id;
+                    var toRedisKey = util.format("%s:messaging:status", data.to);
+
+                    var message = PersonalMessage({
+
+                        type: data.type,
+                        created_at: Date.now(),
+                        updated_at: Date.now(),
+                        status: 'pending',
+                        uuid: id,
+                        data: data.message,
+                        session: socket.decoded_token.jti,
+                        from: socket.decoded_token.jti,
+                        to: data.to
+
+                    });
+
+
+
+                    console.log(data);
+                    io.sockets.adapter.clients([data.to], function (err, clients) {
+                        if (err) {
+                            logger.error('No user available in room', err);
                             io.in(data.to).emit("message", data);
-                            message.status = 'delivered';
-
                             SaveMessage(message);
-
 
                         } else {
-                            socket.emit('connectionerror', 'no_agent_found');
-                            logger.error('No user available in room');
-                            SaveMessage(message);
-                        }
-                    }
-                });
+                            if (Array.isArray(clients) && clients.length > 0) {
 
+
+                                data.id = id;
+                                io.in(data.to).emit("message", data);
+                                message.status = 'delivered';
+
+                                SaveMessage(message);
+
+
+                            } else {
+                                socket.emit('connectionerror', 'no_agent_found');
+                                logger.error('No user available in room');
+                                SaveMessage(message);
+                            }
+                        }
+                    });
+
+                }else{
+
+                    socket.message_buffer.push(data);
+                }
             } else {
                 socket.emit('connectionerror', 'message_error');
             }
@@ -257,6 +267,52 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             logger.info(data);
             if(!socket.agent) {
                 socket.agent = data.username;
+
+                if(socket.message_buffer){
+                    var preMessages = socket.message_buffer.shift();
+                    preMessages.forEach(function(item){
+
+                        logger.info(data);
+                        //io.to(socket.decoded_token.iss).emit('echo', data);
+                        data.from = socket.decoded_token.jti;
+                        data.display = socket.decoded_token.name;
+                        data.time = Date.now();
+                        data.to = socket.agent;
+                        data.who = 'client';
+
+                        var id = uuid.v1();
+                        if (data.id)
+                            id = data.id;
+
+
+                        var toRedisKey = util.format("%s:messaging:status", data.to);
+
+                        var message = PersonalMessage({
+
+                            type: data.type,
+                            created_at: Date.now(),
+                            updated_at: Date.now(),
+                            status: 'pending',
+                            uuid: id,
+                            data: data.message,
+                            session: socket.decoded_token.jti,
+                            from: socket.decoded_token.jti,
+                            to: data.to
+
+                        });
+
+
+                        data.id = id;
+                        io.in(data.to).emit("message", data);
+                        message.status = 'delivered';
+
+                        SaveMessage(message);
+                    })
+
+                    socket.message_buffer = [];
+
+                }
+
             }else{
 
                 io.in(data.username).emit("message", "Chat has routed to another user");
