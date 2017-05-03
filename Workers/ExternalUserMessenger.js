@@ -334,7 +334,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
         });
 
-
         socket.on('retryagent', function () {
 
             ards.PickResource(client_data.tenant, client_data.company, client_data.jti, client_data.attributes, client_data.priority, 1, otherInfo, function (err, resource) {
@@ -356,6 +355,8 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
         });
 
         socket.on('disconnect', function () {
+
+            console.log("socket disconnected");
 
             //if (socket.agent)
             //    io.to(socket.agent).emit("left", client_data);

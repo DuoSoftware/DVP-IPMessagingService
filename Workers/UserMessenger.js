@@ -355,7 +355,7 @@ io.sockets.on('connection',
 
             if (data && data.to) {
                 var client_data = socket.decoded_token;
-                io.to(data.to).emit("agent_reject", client_data);
+                io.to(data.to).emit("agent_rejected", client_data);
             }
 
         });
@@ -648,6 +648,34 @@ io.sockets.on('connection',
                     }
                 }
             });
+
+        });
+
+        socket.on('subscribe', function(data){
+
+            //queue:details
+            if(data && data.room){
+
+                var uniqueRoom = util.format('%d:%d:subscribe:%s', socket.decoded_token.tenant, socket.decoded_token.company,data.room)
+                socket.join(uniqueRoom);
+
+            }else{
+                socket.emit('error', {action: 'subscribe', message: 'no data found'});
+            }
+
+        });
+
+
+        socket.on('unsubscribe', function(data){
+
+            if(data && data.room){
+
+                var uniqueRoom = util.format('%d:%d:subscribe:%s', socket.decoded_token.tenant, socket.decoded_token.company,data.room)
+                socket.leave(uniqueRoom);
+
+            }else{
+                socket.emit('error', {action: 'subscribe', message: 'no data found'});
+            }
 
         });
 
