@@ -95,6 +95,9 @@ io.sockets.on('connection',
     .on('authenticated',function (socket) {
 
 
+        socket.join(socket.decoded_token.iss);
+        logger.info("Joining to the room "+socket.decoded_token.iss);
+
         logger.info('hello! ' + socket.decoded_token.iss);
 
         redisClient.set(util.format("%s:messaging:time", socket.decoded_token.iss), Date.now().toString(), redis.print);
@@ -166,9 +169,6 @@ io.sockets.on('connection',
         });
 
         socket.on('connect', function (data) {
-
-            socket.join(socket.decoded_token.iss);
-            logger.info("Joining to the room "+socket.decoded_token.iss);
 
 
             redisClient.get(fromRedisKey, function (errGet, resGet) {
