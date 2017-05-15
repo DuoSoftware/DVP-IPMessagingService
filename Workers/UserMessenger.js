@@ -150,7 +150,6 @@ io.sockets.on('connection',
         });
 
 
-        socket.join(socket.decoded_token.iss);
 
         redisClient.hgetall(onlineUsers, function (err, obj) {
             if (err) {
@@ -167,6 +166,9 @@ io.sockets.on('connection',
         });
 
         socket.on('connect', function (data) {
+
+            socket.join(socket.decoded_token.iss);
+            logger.info("Joining to the room "+socket.decoded_token.iss);
 
 
             redisClient.get(fromRedisKey, function (errGet, resGet) {
