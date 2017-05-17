@@ -95,6 +95,9 @@ io.sockets.on('connection',
     .on('authenticated',function (socket) {
 
 
+        socket.join(socket.decoded_token.iss);
+        logger.info("Joining to the room "+socket.decoded_token.iss);
+
         logger.info('hello! ' + socket.decoded_token.iss);
 
         redisClient.set(util.format("%s:messaging:time", socket.decoded_token.iss), Date.now().toString(), redis.print);
@@ -150,7 +153,6 @@ io.sockets.on('connection',
         });
 
 
-        socket.join(socket.decoded_token.iss);
 
         redisClient.hgetall(onlineUsers, function (err, obj) {
             if (err) {
@@ -251,7 +253,7 @@ io.sockets.on('connection',
                                 id: id,
                                 status: 'nouser'
                             });
-                            logger.error('No user available in room');
+                            logger.error('No user available in room \n');
                             SaveMessage(message);
                         }
                     }
@@ -355,7 +357,7 @@ io.sockets.on('connection',
 
             if (data && data.to) {
                 var client_data = socket.decoded_token;
-                io.to(data.to).emit("agent_reject", client_data);
+                io.to(data.to).emit("agent_rejected", client_data);
             }
 
         });
@@ -468,9 +470,10 @@ io.sockets.on('connection',
 
                 case 'oldmessages':
 
+                    var requester = data.requester;
                     var from = data.from;
                     var to = data.to;
-                    var id = data.uuid;
+                    var id = data.id;
                     PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
 
                         if (obj) {
@@ -478,16 +481,17 @@ io.sockets.on('connection',
                             PersonalMessage.find({
                                 created_at: {$lt: obj.created_at},
                                 $or: [{from: from, to: to}, {from: to, to: from}]
-                            }).sort({created_at: -1}).limit(10)
+                            }).sort({created_at: -1}).limit(100)
                                 .exec(function (err, oldmessages) {
 
                                     if (oldmessages) {
-                                        socket.emit("oldmessages", oldmessages);
+                                        socket.emit("oldmessages", {from:requester, messages:oldmessages});
                                     } else {
 
                                         logger.error('No old message found');
                                         socket.emit('connectionerror', {
                                             action: 'oldmessages',
+                                            from:requester,
                                             data: data,
                                             message: 'no data found'
                                         });
@@ -502,7 +506,7 @@ io.sockets.on('connection',
 
                     var from = data.from;
                     var to = data.to;
-                    var id = data.uuid;
+                    var id = data.id;
                     PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
 
                         if (obj) {
@@ -510,7 +514,7 @@ io.sockets.on('connection',
                             PersonalMessage.find({
                                 created_at: {$gt: obj.created_at},
                                 $or: [{from: from, to: to}, {from: to, to: from}]
-                            }).sort({created_at: 1}).limit(10)
+                            }).sort({created_at: 1}).limit(100)
                                 .exec(function (err, newmessages) {
 
                                     if (data) {
@@ -538,7 +542,7 @@ io.sockets.on('connection',
 
                     PersonalMessage.find({
                         $or: [{from: from, to: to}, {from: to, to: from}]
-                    }).sort({created_at: -1}).limit(10)
+                    }).sort({created_at: -1}).limit(100)
                         .exec(function (err, latestmessages) {
 
                             if (latestmessages && Array.isArray(latestmessages)) {
@@ -609,23 +613,71 @@ io.sockets.on('connection',
 
         socket.on('disconnect', function (reason) {
 
-            console.log(reason);
-
-            //var statusGroup = util.format("%d:%d:messaging:status",socket.decoded_token.tenant,socket.decoded_token.company);
-            //redisClient.del(util.format("%s:messaging:status", socket.decoded_token.iss), redis.print);
-            console.log("Bye " + socket.decoded_token.iss);
-            var statusObg = {};
-            statusObg[socket.decoded_token.iss] = 'offline';
-            io.to(statusGroup).emit("status", statusObg);
-
-            var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
-            //redisClient.hdel(onlineUsers, socket.decoded_token.iss, redis.print);
-            redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
-
-            redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
 
 
+            console.log("Bye " + socket.decoded_token.iss + " Reason: "+reason);
 
+
+            io.sockets.adapter.clients([ socket.decoded_token.iss], function (err, clients) {
+                if (err) {
+
+                    logger.error('No user available in room :', err);
+                    var statusObg = {};
+                    statusObg[socket.decoded_token.iss] = 'offline';
+                    io.to(statusGroup).emit("status", statusObg);
+                    var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
+                    redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
+                    redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
+
+
+                } else {
+                    if (Array.isArray(clients) && clients.length > 0) {
+
+                        logger.info("There are users available so keeping user online");
+
+                    } else {
+
+
+                        logger.debug('No user available in room');
+
+                        var statusObg = {};
+                        statusObg[socket.decoded_token.iss] = 'offline';
+                        io.to(statusGroup).emit("status", statusObg);
+                        var onlineUsers = util.format("%d:%d:users:online", socket.decoded_token.tenant, socket.decoded_token.company);
+                        redisClient.hset(onlineUsers, socket.decoded_token.iss, 'offline', redis.print);
+                        redisClient.set(util.format("%s:messaging:lastseen", socket.decoded_token.iss), Date.now(), redis.print);
+
+                    }
+                }
+            });
+
+        });
+
+        socket.on('subscribe', function(data){
+
+            //queue:details
+            if(data && data.room){
+
+                var uniqueRoom = util.format('%d:%d:subscribe:%s', socket.decoded_token.tenant, socket.decoded_token.company,data.room)
+                socket.join(uniqueRoom);
+
+            }else{
+                socket.emit('error', {action: 'subscribe', message: 'no data found'});
+            }
+
+        });
+
+
+        socket.on('unsubscribe', function(data){
+
+            if(data && data.room){
+
+                var uniqueRoom = util.format('%d:%d:subscribe:%s', socket.decoded_token.tenant, socket.decoded_token.company,data.room)
+                socket.leave(uniqueRoom);
+
+            }else{
+                socket.emit('error', {action: 'subscribe', message: 'no data found'});
+            }
 
         });
 
