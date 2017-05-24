@@ -73,7 +73,7 @@ mongoose.connect(connectionstring,{server:{auto_reconnect:true}});
 
 
 mongoose.connection.on('error', function (err) {
-    console.error( new Error(err));
+    console.error(err);
     mongoose.disconnect();
 
 });
