@@ -397,7 +397,7 @@ io.sockets.on('connection',
                     updated_at: Date.now(),
                     status: 'delivered',
                     uuid: uuid.v4(),
-                    data: data.message,
+                    data: "Agent Left",
                     from: socket.decoded_token.iss,
                     to: data.to
 
