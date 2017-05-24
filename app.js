@@ -84,7 +84,7 @@ mongoose.connection.on('opening', function() {
 
 
 mongoose.connection.on('disconnected', function() {
-    console.error( new Error('Could not connect to database'));
+    console.error( 'Could not connect to database');
     mongoose.connect(connectionstring,{server:{auto_reconnect:true}});
 });
 
