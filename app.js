@@ -32,7 +32,6 @@ var ards = require('./Workers/Ards');
 //mongoose.connect(connectionstring);
 
 
-
 var util = require('util');
 var mongoip=config.Mongo.ip;
 var mongoport=config.Mongo.port;

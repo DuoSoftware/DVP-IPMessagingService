@@ -413,6 +413,38 @@ io.sockets.on('connection',
             }
         });
 
+
+        socket.on('tag', function (data) {
+
+            if (data && data.to) {
+                var client_data = socket.decoded_token;
+                //io.to(data.to).emit("left", client_data);
+
+                var message = PersonalMessage({
+
+                    type: "tag",
+                    created_at: Date.now(),
+                    updated_at: Date.now(),
+                    status: 'delivered',
+                    uuid: uuid.v4(),
+                    data: data.message,
+                    from: socket.decoded_token.iss,
+                    to: data.to
+
+                });
+
+                SaveMessage(message);
+
+
+                //ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
+
+                //var onlineClientsUsers = util.format("%d:%d:client:online:%s", client_data.tenant, client_data.company, data.to);
+                //redisClient.del(onlineClientsUsers, redis.print);
+            }
+        });
+
+
+
         socket.on('typing', function (data) {
 
             if (data && data.to) {
@@ -598,6 +630,37 @@ io.sockets.on('connection',
                                     }
                                 })
                         }
+                    });
+
+                    break;
+
+
+                case 'tags':
+
+                    var from = data.from;
+                    var to = socket.decoded_token.iss;
+
+                    PersonalMessage.find({to: from, type: 'tag'}, function (err, data) {
+
+
+
+                        if (data) {
+
+                            var reply = {};
+                            reply.from = from;
+                            reply.to = to;
+                            reply.tags = data;
+                            io.to(socket.decoded_token.iss).emit("tags", reply);
+                        } else {
+                            logger.error('No tags found');
+                            socket.emit('connectionerror', {
+                                action: 'tags',
+                                data: data,
+                                message: 'no data found'
+                            });
+                        }
+
+
                     });
 
                     break;
