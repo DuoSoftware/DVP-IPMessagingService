@@ -44,8 +44,6 @@ redisClient.on("error", function (err) {
 
 redisClient.on("connected", function () {
     logger.info("Redis Connected ");
-
-
 });
 
 var SaveMessage = function(message){
