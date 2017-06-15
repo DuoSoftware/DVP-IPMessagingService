@@ -19,7 +19,7 @@
   "dependencies": {
     "config": "^1.24.0",
     "dvp-common": "^0.6.6",
-    "dvp-mongomodels": "^4.2.3",
+    "dvp-mongomodels": "^4.8.10",
     "mongoose": "^4.7.6",
     "node-uuid": "^1.4.7",
     "redis": "^2.6.3",

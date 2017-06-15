@@ -95,6 +95,9 @@ io.sockets.on('connection',
     .on('authenticated',function (socket) {
 
 
+        socket.join(socket.decoded_token.iss);
+        logger.info("Joining to the room "+socket.decoded_token.iss);
+
         logger.info('hello! ' + socket.decoded_token.iss);
 
         redisClient.set(util.format("%s:messaging:time", socket.decoded_token.iss), Date.now().toString(), redis.print);
@@ -150,7 +153,6 @@ io.sockets.on('connection',
         });
 
 
-        socket.join(socket.decoded_token.iss);
 
         redisClient.hgetall(onlineUsers, function (err, obj) {
             if (err) {
@@ -341,6 +343,22 @@ io.sockets.on('connection',
                                 var jsonData = JSON.stringify(data);
                                 redisClient.set(onlineClientsUsers, jsonData, redis.print);
 
+
+                                var message = PersonalMessage({
+
+                                    type: "accept",
+                                    created_at: Date.now(),
+                                    updated_at: Date.now(),
+                                    status: 'delivered',
+                                    uuid: uuid.v4(),
+                                    data: user.username,
+                                    from: socket.decoded_token.iss,
+                                    to: data.to
+
+                                });
+
+                                SaveMessage(message);
+
                             } else {
 
                             }
@@ -360,11 +378,33 @@ io.sockets.on('connection',
 
         });
 
+        socket.on('ticket', function (data) {
+
+                io.to(data.to).emit("ticket", data);
+
+        });
+
         socket.on('sessionend', function (data) {
 
             if (data && data.to) {
                 var client_data = socket.decoded_token;
                 io.to(data.to).emit("left", client_data);
+
+                var message = PersonalMessage({
+
+                    type: "end",
+                    created_at: Date.now(),
+                    updated_at: Date.now(),
+                    status: 'delivered',
+                    uuid: uuid.v4(),
+                    data: data.message,
+                    from: socket.decoded_token.iss,
+                    to: data.to
+
+                });
+
+                SaveMessage(message);
+
 
                 ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
 
@@ -372,6 +412,38 @@ io.sockets.on('connection',
                 redisClient.del(onlineClientsUsers, redis.print);
             }
         });
+
+
+        socket.on('tag', function (data) {
+
+            if (data && data.to) {
+                var client_data = socket.decoded_token;
+                //io.to(data.to).emit("left", client_data);
+
+                var message = PersonalMessage({
+
+                    type: "tag",
+                    created_at: Date.now(),
+                    updated_at: Date.now(),
+                    status: 'delivered',
+                    uuid: uuid.v4(),
+                    data: data.message,
+                    from: socket.decoded_token.iss,
+                    to: data.to
+
+                });
+
+                SaveMessage(message);
+
+
+                //ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Completed', '', '', 'inbound');
+
+                //var onlineClientsUsers = util.format("%d:%d:client:online:%s", client_data.tenant, client_data.company, data.to);
+                //redisClient.del(onlineClientsUsers, redis.print);
+            }
+        });
+
+
 
         socket.on('typing', function (data) {
 
@@ -472,14 +544,30 @@ io.sockets.on('connection',
                     var from = data.from;
                     var to = data.to;
                     var id = data.id;
+
+                    var customer = (requester === from) ? from : to;
+
                     PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
 
+                        var query = {
+                            created_at: {$lt: obj.created_at},
+                            $or: [{from: from, to: to}, {from: to, to: from}]
+                        };
+
+                        if(data.who && data.who === "client"){
+                            query = {
+                                created_at: {$lt: obj.created_at},
+                                $or: [{from: customer}, {to: customer}]
+                            };
+                        }
+
+                        //{
+                        //    created_at: {$lt: obj.created_at},
+                        //    $or: [{from: from, to: to}, {from: to, to: from}]
+                        //}
                         if (obj) {
 
-                            PersonalMessage.find({
-                                created_at: {$lt: obj.created_at},
-                                $or: [{from: from, to: to}, {from: to, to: from}]
-                            }).sort({created_at: -1}).limit(100)
+                            PersonalMessage.find(query).sort({created_at: -1}).limit(100)
                                 .exec(function (err, oldmessages) {
 
                                     if (oldmessages) {
@@ -505,14 +593,29 @@ io.sockets.on('connection',
                     var from = data.from;
                     var to = data.to;
                     var id = data.id;
+                    var customer = (requester === from) ? from : to;
+
                     PersonalMessage.findOne({from: from, to: to, uuid: id}, function (err, obj) {
 
                         if (obj) {
 
-                            PersonalMessage.find({
+
+                            var query = {
                                 created_at: {$gt: obj.created_at},
                                 $or: [{from: from, to: to}, {from: to, to: from}]
-                            }).sort({created_at: 1}).limit(100)
+                            };
+
+                            if(data.who && data.who === "client"){
+                                query = {
+                                    created_at: {$gt: obj.created_at},
+                                    $or: [{from: customer}, {to: customer}]
+                                };
+                            }
+
+                            //created_at: {$gt: obj.created_at},
+                            //$or: [{from: from, to: to}, {from: to, to: from}]
+
+                            PersonalMessage.find(query).sort({created_at: 1}).limit(100)
                                 .exec(function (err, newmessages) {
 
                                     if (data) {
@@ -532,15 +635,55 @@ io.sockets.on('connection',
                     break;
 
 
+                case 'tags':
+
+                    var from = data.from;
+                    var to = socket.decoded_token.iss;
+
+                    PersonalMessage.find({to: from, type: 'tag'}, function (err, data) {
+
+
+
+                        if (data) {
+
+                            var reply = {};
+                            reply.from = from;
+                            reply.to = to;
+                            reply.tags = data;
+                            io.to(socket.decoded_token.iss).emit("tags", reply);
+                        } else {
+                            logger.error('No tags found');
+                            socket.emit('connectionerror', {
+                                action: 'tags',
+                                data: data,
+                                message: 'no data found'
+                            });
+                        }
+
+
+                    });
+
+                    break;
+
+
                 case 'latestmessages':
 
                     var from = data.from;
                     var to = socket.decoded_token.iss;
                     //var id = data.uuid;
 
-                    PersonalMessage.find({
+                    var query = {
                         $or: [{from: from, to: to}, {from: to, to: from}]
-                    }).sort({created_at: -1}).limit(100)
+                    };
+
+                    if(data.who && data.who === "client"){
+
+                        query = {
+                            $or: [{from: from}, {to: from}]
+                        };
+                    }
+
+                    PersonalMessage.find(query).sort({created_at: -1}).limit(100)
                         .exec(function (err, latestmessages) {
 
                             if (latestmessages && Array.isArray(latestmessages)) {
@@ -612,10 +755,7 @@ io.sockets.on('connection',
         socket.on('disconnect', function (reason) {
 
 
-
             console.log("Bye " + socket.decoded_token.iss + " Reason: "+reason);
-
-
             io.sockets.adapter.clients([ socket.decoded_token.iss], function (err, clients) {
                 if (err) {
 
