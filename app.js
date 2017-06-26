@@ -32,7 +32,6 @@ var ards = require('./Workers/Ards');
 //mongoose.connect(connectionstring);
 
 
-
 var util = require('util');
 var mongoip=config.Mongo.ip;
 var mongoport=config.Mongo.port;
@@ -45,6 +44,7 @@ var mongoose = require('mongoose');
 var connectionstring = '';
 mongoip = mongoip.split(',');
 if(util.isArray(mongoip)){
+     if(mongoip.length > 1){ 
 
     mongoip.forEach(function(item){
         connectionstring += util.format('%s:%d,',item,mongoport)
@@ -56,17 +56,23 @@ if(util.isArray(mongoip)){
     if(mongoreplicaset){
         connectionstring = util.format('%s?replicaSet=%s',connectionstring,mongoreplicaset) ;
     }
+     }
+    else
+    {
+         connectionstring = util.format('mongodb://%s:%s@%s:%d/%s',mongouser,mongopass,mongoip[0],mongoport,mongodb);
+    }
 }else{
 
-    connectionstring = util.format('mongodb://%s:%s@%s:%d/%s',mongouser,mongopass,mongoip,mongoport,mongodb)
+    connectionstring = util.format('mongodb://%s:%s@%s:%d/%s',mongouser,mongopass,mongoip,mongoport,mongodb);
 }
 
+console.log(connectionstring);
 
 mongoose.connect(connectionstring,{server:{auto_reconnect:true}});
 
 
 mongoose.connection.on('error', function (err) {
-    console.error( new Error(err));
+    console.error(err);
     mongoose.disconnect();
 
 });
@@ -77,7 +83,7 @@ mongoose.connection.on('opening', function() {
 
 
 mongoose.connection.on('disconnected', function() {
-    console.error( new Error('Could not connect to database'));
+    console.error( 'Could not connect to database');
     mongoose.connect(connectionstring,{server:{auto_reconnect:true}});
 });
 

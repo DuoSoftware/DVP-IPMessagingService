@@ -2,10 +2,6 @@
  * Created by Sukitha on 1/10/2017.
  */
 
-/**
- * Created by Sukitha on 1/10/2017.
- */
-
 var util = require('util');
 var config = require('config');
 var uuid = require('node-uuid');
@@ -289,21 +285,21 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
                         var message = PersonalMessage({
 
-                            type: data.type,
+                            type: item.type,
                             created_at: Date.now(),
                             updated_at: Date.now(),
                             status: 'pending',
                             uuid: id,
-                            data: data.message,
+                            data: item.message,
                             session: socket.decoded_token.jti,
                             from: socket.decoded_token.jti,
-                            to: data.to
+                            to: item.to
 
                         });
 
 
-                        data.id = id;
-                        io.in(data.to).emit("message", data);
+                        item.id = id;
+                        io.in(item.to).emit("message", item);
                         message.status = 'delivered';
 
                         SaveMessage(message);
