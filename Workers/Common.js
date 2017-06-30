@@ -9,14 +9,87 @@ var validator = require('validator');
 var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
 var token = util.format("Bearer %s",config.Host.token);
 var uuid = require('node-uuid');
-var redis = require('redis').createClient;
+var redis = require('ioredis');
 
 var redisip = config.Security.ip;
 var redisport = config.Security.port;
-var redisuser = config.Security.user;
 var redispass = config.Security.password;
+var redismode = config.Security.mode;
+var redisdb = config.Security.db;
 
-var redisClient = redis(redisport,redisip,{ auth_pass: redispass });
+
+
+var redisSetting =  {
+    port:redisport,
+    host:redisip,
+    family: 4,
+    db: redisdb,
+    password: redispass,
+    retryStrategy: function (times) {
+        var delay = Math.min(times * 50, 2000);
+        return delay;
+    },
+    reconnectOnError: function (err) {
+
+        return true;
+    }
+};
+
+if(redismode == 'sentinel'){
+
+    if(config.Security.sentinels && config.Security.sentinels.hosts && config.Security.sentinels.port, config.Security.sentinels.name){
+        var sentinelHosts = config.Security.sentinels.hosts.split(',');
+        if(Array.isArray(sentinelHosts) && sentinelHosts.length > 2){
+            var sentinelConnections = [];
+
+            sentinelHosts.forEach(function(item){
+
+                sentinelConnections.push({host: item, port:config.Security.sentinels.port})
+
+            })
+
+            redisSetting = {
+                sentinels:sentinelConnections,
+                name: config.Security.sentinels.name,
+                password:redispass
+            }
+
+        }else{
+
+            console.log("No enough sentinel servers found .........");
+        }
+
+    }
+}
+
+var redisClient = undefined;
+
+if(redismode != "cluster") {
+    redisClient = new redis(redisSetting);
+}else{
+
+    var redisHosts = redisip.split(",");
+    if(Array.isArray(redisHosts)){
+
+
+        redisSetting = [];
+        redisHosts.forEach(function(item){
+            redisSetting.push({
+                host: item,
+                port: redisport,
+                family: 4,
+                password: redispass});
+        });
+
+        var redisClient = new redis.Cluster([redisSetting]);
+
+    }else{
+
+        redisClient = new redis(redisSetting);
+    }
+
+
+}
 
 
 redisClient.on("error", function (err) {
