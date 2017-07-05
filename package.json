@@ -18,7 +18,7 @@
   "homepage": "https://github.com/DuoSoftware/DVP-IPMessagingService#readme",
   "dependencies": {
     "config": "^1.24.0",
-    "dvp-common": "^0.8.1",
+    "dvp-common": "^0.8.4",
     "dvp-mongomodels": "^4.8.10",
     "ioredis": "^3.1.1",
     "mongoose": "^4.7.6",
