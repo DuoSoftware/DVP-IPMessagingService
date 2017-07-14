@@ -1,7 +1,6 @@
 /**
  * Created by Sukitha on 1/10/2017.
  */
-"use strict";
 var util = require('util');
 var config = require('config');
 var uuid = require('node-uuid');
