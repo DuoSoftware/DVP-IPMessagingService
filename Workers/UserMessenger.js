@@ -7,17 +7,12 @@ var config = require('config');
 var uuid = require('node-uuid');
 var port = config.Host.internalport || 3000;
 
-////////////////////////////////redis////////////////////////////////////////
-var redisip = config.Redis.ip;
-var redisport = config.Redis.port;
-var redisdb = config.Redis.db;
-var redisuser = config.Redis.user;
-var redispass = config.Redis.password;
-////////////////////////////////////////////////////////////////////////////////
+
 
 var io = require('socket.io')(port);
-var redis = require('redis').createClient;
+var redis = require('ioredis');
 var adapter = require('socket.io-redis');
+//var adapter = require('socket.io-ioredis');
 var socketioJwt =  require("socketio-jwt");
 var secret = require('dvp-common/Authentication/Secret.js');
 var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
@@ -28,13 +23,105 @@ var Message = require('dvp-mongomodels/model/Room').Message;
 var ards = require('./Ards');
 
 
-var pub = redis(redisport, redisip, { auth_pass: redispass });
-var sub = redis(redisport, redisip, { auth_pass: redispass });
-io.adapter(adapter({ pubClient: pub, subClient: sub }));
 
 
-var redisClient = redis(redisport,redisip,{ auth_pass: redispass });
-redisClient.select(redisdb, function() { logger.info("Redis Db selected " + redisdb);})
+var redisip = config.Redis.ip;
+var redisport = config.Redis.port;
+var redispass = config.Redis.password;
+var redismode = config.Redis.mode;
+var redisdb = config.Redis.db;
+
+
+
+var redisSetting =  {
+    port:redisport,
+    host:redisip,
+    family: 4,
+    password: redispass,
+    db: redisdb,
+    retryStrategy: function (times) {
+        var delay = Math.min(times * 50, 2000);
+        return delay;
+    },
+    reconnectOnError: function (err) {
+
+        return true;
+    }
+};
+
+
+
+if(redismode == 'sentinel'){
+
+    if(config.Redis.sentinels && config.Redis.sentinels.hosts && config.Redis.sentinels.port, config.Redis.sentinels.name){
+        var sentinelHosts = config.Redis.sentinels.hosts.split(',');
+        if(Array.isArray(sentinelHosts) && sentinelHosts.length > 2){
+            var sentinelConnections = [];
+
+            sentinelHosts.forEach(function(item){
+
+                sentinelConnections.push({host: item, port:config.Redis.sentinels.port})
+
+            })
+
+            redisSetting = {
+                sentinels:sentinelConnections,
+                name: config.Redis.sentinels.name,
+                password: redispass
+            }
+
+        }else{
+
+            console.log("No enough sentinel servers found .........");
+        }
+
+    }
+}
+
+var redisClient = undefined;
+var  pubclient = undefined;
+var subclient = undefined;
+
+if(redismode != "cluster") {
+    redisClient = new redis(redisSetting);
+    pubclient = new redis(redisSetting);
+    subclient = new redis(redisSetting);
+}else{
+
+    var redisHosts = redisip.split(",");
+    if(Array.isArray(redisHosts)){
+
+
+        redisSetting = [];
+        redisHosts.forEach(function(item){
+            redisSetting.push({
+                host: item,
+                port: redisport,
+                family: 4,
+                password: redispass});
+        });
+
+        redisClient = new redis.Cluster([redisSetting]);
+        pubclient = new redis.Cluster([redisSetting]);
+        subclient = new redis.Cluster([redisSetting]);
+
+    }else{
+
+        redisClient = new redis(redisSetting);
+        pubclient = redis(redisSetting);
+        subclient = redis(redisSetting);
+    }
+
+
+}
+
+
+
+//var pub = redis(redisport, redisip, { auth_pass: redispass });
+//var sub = redis(redisport, redisip, { auth_pass: redispass });
+io.adapter(adapter({ pubClient: pubclient, subClient: subclient}));
+
+
 
 
 redisClient.on("error", function (err) {
@@ -42,11 +129,31 @@ redisClient.on("error", function (err) {
 
 });
 
-redisClient.on("connected", function () {
-    logger.info("Redis Connected ");
-
+redisClient.on("node error", function (err) {
+    logger.error("Error ",  err);
 
 });
+
+redisClient.on("connect", function () {
+    logger.info("Redis Connected ");
+});
+
+pubclient.on("error", function (err) {
+    logger.error("Error ",  err);
+});
+
+
+pubclient.on("error", function (err) {
+    logger.error("Error ",  err);
+});
+subclient.on("node error", function (err) {
+    logger.error("Error ",  err);
+});
+
+pubclient.on("node error", function (err) {
+    logger.error("Error ",  err);
+});
+
 
 var SaveMessage = function(message){
 
@@ -126,6 +233,7 @@ io.sockets.on('connection',
                     var statusObg = {};
                     statusObg[socket.decoded_token.iss] = resGet;
 
+                    //if(statusObg)
                     io.to(statusGroup).emit("status", statusObg);
                     redisClient.hset(onlineUsers, socket.decoded_token.iss, resGet, redis.print);
 
