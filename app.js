@@ -121,3 +121,7 @@ ards.RegisterChatArdsClient();
     var clientmessanger = require('./Workers/ExternalUserMessenger');
 //}
 
+process.on('uncaughtException', function (err) {
+    console.log(err);
+    //process.exit(1);
+})
