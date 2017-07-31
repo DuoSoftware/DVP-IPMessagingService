@@ -591,6 +591,14 @@ io.sockets.on('connection',
 
                     break;
 
+                case 'clients':
+
+                    io.sockets.adapter.clients([data.room], function (err, clients) {
+                        if(clients){
+                            socket.emit("clients", clients);
+                        }
+                    });
+
                 //
                 case 'allcallstatus':
 
