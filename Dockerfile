@@ -13,5 +13,5 @@ RUN git clone -b $VERSION_TAG https://github.com/DuoSoftware/DVP-IPMessagingServ
 RUN cd /usr/local/src/ipmessagingservice;
 WORKDIR /usr/local/src/ipmessagingservice
 RUN npm install
-EXPOSE 8889
+EXPOSE 8889 8890
 CMD [ "node", "/usr/local/src/ipmessagingservice/app.js" ]
