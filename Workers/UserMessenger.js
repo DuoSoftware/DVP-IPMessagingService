@@ -1,7 +1,6 @@
 /**
  * Created by Sukitha on 1/10/2017.
  */
-"use strict";
 var util = require('util');
 var config = require('config');
 var uuid = require('node-uuid');
@@ -591,6 +590,14 @@ io.sockets.on('connection',
                     });
 
                     break;
+
+                case 'clients':
+
+                    io.sockets.adapter.clients([data.room], function (err, clients) {
+                        if(clients){
+                            socket.emit("clients", clients);
+                        }
+                    });
 
                 //
                 case 'allcallstatus':

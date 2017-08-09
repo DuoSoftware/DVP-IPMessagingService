@@ -108,8 +108,6 @@ if(redismode != "cluster") {
         pubclient = new redis(redisSetting);
         subclient = new redis(redisSetting);
     }
-
-
 }
 
 
