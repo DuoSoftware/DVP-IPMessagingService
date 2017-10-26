@@ -8,7 +8,19 @@ var uuid = require('node-uuid');
 var port = config.Host.externalport || 4000;
 
 
-var io = require('socket.io')(port);
+var fs = require('fs');
+var options = {
+   /* key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.crt')*/
+};
+var app = require('https').createServer(options);
+var io = require('socket.io')(app);
+io.on('connection', function(socket) {
+    socket.emit('on_test', {'x': 1});
+});
+app.listen(3000);
+
+//var io = require('socket.io')(port);
 var redis = require('ioredis');
 var adapter = require('socket.io-redis');
 //var adapter = require('socket.io-ioredis');
@@ -187,6 +199,7 @@ var UpdateRead = function (uuid) {
 };
 
 
+/*
 // ------------------------ https server --------------------------------- \\
 var restify = require('restify');
 restify.CORS.ALLOW_HEADERS.push('authorization');
@@ -217,13 +230,17 @@ http_server.listen(port, function () {
 
 // ------------------------ http http_server --------------------------------- \\
 
-io.attach(http_server);
-io.attach(https_server);
+/!*io.attach(http_server);*!/
+/!*io.attach(https_server);*!/
+*/
+
 
 io.sockets.on('connection', socketioJwt.authorize({
     secret: Common.CompanyChatSecret,
     timeout: 15000
 })).on('authenticated', function (socket) {
+
+
 
     logger.info('hello! ' + socket.decoded_token.iss);
 
