@@ -12,7 +12,7 @@ var io = require('socket.io')(port);
 var redis = require('ioredis');
 var adapter = require('socket.io-redis');
 //var adapter = require('socket.io-ioredis');
-var socketioJwt =  require("socketio-jwt");
+var socketioJwt = require("socketio-jwt");
 var secret = require('dvp-common/Authentication/Secret.js');
 var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
 var PersonalMessage = require('dvp-mongomodels/model/Room').PersonalMessage;
@@ -29,10 +29,9 @@ var redismode = config.Redis.mode;
 var redisdb = config.Redis.db;
 
 
-
-var redisSetting =  {
-    port:redisport,
-    host:redisip,
+var redisSetting = {
+    port: redisport,
+    host: redisip,
     family: 4,
     password: redispass,
     db: redisdb,
@@ -47,27 +46,26 @@ var redisSetting =  {
 };
 
 
+if (redismode == 'sentinel') {
 
-if(redismode == 'sentinel'){
-
-    if(config.Redis.sentinels && config.Redis.sentinels.hosts && config.Redis.sentinels.port, config.Redis.sentinels.name){
+    if (config.Redis.sentinels && config.Redis.sentinels.hosts && config.Redis.sentinels.port, config.Redis.sentinels.name) {
         var sentinelHosts = config.Redis.sentinels.hosts.split(',');
-        if(Array.isArray(sentinelHosts) && sentinelHosts.length > 2){
+        if (Array.isArray(sentinelHosts) && sentinelHosts.length > 2) {
             var sentinelConnections = [];
 
-            sentinelHosts.forEach(function(item){
+            sentinelHosts.forEach(function (item) {
 
-                sentinelConnections.push({host: item, port:config.Redis.sentinels.port})
+                sentinelConnections.push({host: item, port: config.Redis.sentinels.port})
 
             })
 
             redisSetting = {
-                sentinels:sentinelConnections,
+                sentinels: sentinelConnections,
                 name: config.Redis.sentinels.name,
                 password: redispass
             }
 
-        }else{
+        } else {
 
             console.log("No enough sentinel servers found .........");
         }
@@ -76,33 +74,34 @@ if(redismode == 'sentinel'){
 }
 
 var redisClient = undefined;
-var  pubclient = undefined;
+var pubclient = undefined;
 var subclient = undefined;
 
-if(redismode != "cluster") {
+if (redismode != "cluster") {
     redisClient = new redis(redisSetting);
     pubclient = new redis(redisSetting);
     subclient = new redis(redisSetting);
-}else{
+} else {
 
     var redisHosts = redisip.split(",");
-    if(Array.isArray(redisHosts)){
+    if (Array.isArray(redisHosts)) {
 
 
         redisSetting = [];
-        redisHosts.forEach(function(item){
+        redisHosts.forEach(function (item) {
             redisSetting.push({
                 host: item,
                 port: redisport,
                 family: 4,
-                password: redispass});
+                password: redispass
+            });
         });
 
         redisClient = new redis.Cluster([redisSetting]);
         pubclient = new redis.Cluster([redisSetting]);
         subclient = new redis.Cluster([redisSetting]);
 
-    }else{
+    } else {
 
         redisClient = new redis(redisSetting);
         pubclient = new redis(redisSetting);
@@ -111,20 +110,17 @@ if(redismode != "cluster") {
 }
 
 
-
 //var pub = redis(redisport, redisip, { auth_pass: redispass });
 //var sub = redis(redisport, redisip, { auth_pass: redispass });
-io.adapter(adapter({ pubClient: pubclient, subClient: subclient}));
-
-
+io.adapter(adapter({pubClient: pubclient, subClient: subclient}));
 
 
 redisClient.on("error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 
 redisClient.on("node error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 
 redisClient.on("connect", function () {
@@ -133,70 +129,106 @@ redisClient.on("connect", function () {
 
 
 pubclient.on("error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 
 subclient.on("error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 pubclient.on("node error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 
 subclient.on("node error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 
 
-var SaveMessage = function(message){
+var SaveMessage = function (message) {
 
     message.save(function (err, _message) {
         if (err) {
 
-            logger.error('Save message failed ',err);
+            logger.error('Save message failed ', err);
 
-        } else{
+        } else {
 
-            if(_message){
+            if (_message) {
 
                 logger.info("Message saved ");
 
-            }else{
+            } else {
 
-                logger.error('Save message failed ',err);
+                logger.error('Save message failed ', err);
             }
         }
     });
 };
 
-var UpdateRead = function(uuid){
+var UpdateRead = function (uuid) {
 
-    PersonalMessage.findOneAndUpdate({uuid:uuid},{status:'seen'},function (err, _message) {
+    PersonalMessage.findOneAndUpdate({uuid: uuid}, {status: 'seen'}, function (err, _message) {
         if (err) {
 
-            logger.error('Update seen message failed ',err);
+            logger.error('Update seen message failed ', err);
 
-        } else{
+        } else {
 
-            if(_message){
+            if (_message) {
 
                 logger.info("Update seen saved ");
 
-            }else{
+            } else {
 
-                logger.error('Update seen message failed ',err);
+                logger.error('Update seen message failed ', err);
             }
         }
     });
 };
 
 
-io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSecret, timeout: 15000})).on('authenticated',function (socket) {
+// ------------------------ https server --------------------------------- \\
+var restify = require('restify');
+restify.CORS.ALLOW_HEADERS.push('authorization');
+
+var https_options = {
+    name: "External Messenger HTTPS Server",
+    //ca: fs.readFileSync('/etc/ssl/fb/COMODORSADomainValidationSecureServerCA.crt'),
+    //key: fs.readFileSync('/etc/ssl/fb/SSL1.txt'),
+    //certificate: fs.readFileSync('/etc/ssl/fb/STAR_duoworld_com.crt')
+};
+
+var https_server = restify.createServer(https_options);
+
+https_server.listen(443, function () {
+    console.log('%s listening at %s', https_server.name, https_server.url);
+});
+// ------------------------ https server --------------------------------- \\
+
+// ------------------------ http server --------------------------------- \\
+
+var http_server = restify.createServer({
+    name: "External Messenger HTTP Server"
+});
+var port = config.Host.externalserverport || 3000;
+http_server.listen(port, function () {
+    console.log('%s listening at %s', http_server.name, http_server.url);
+});
+
+// ------------------------ http http_server --------------------------------- \\
+
+io.attach(http_server);
+io.attach(https_server);
+
+io.sockets.on('connection', socketioJwt.authorize({
+    secret: Common.CompanyChatSecret,
+    timeout: 15000
+})).on('authenticated', function (socket) {
 
     logger.info('hello! ' + socket.decoded_token.iss);
 
 
-    Common.CreateEngagement(socket.decoded_token, function(error, profile) {
+    Common.CreateEngagement(socket.decoded_token, function (error, profile) {
 
         socket.join(socket.decoded_token.jti);
         ///////////////////////////////////////////ARDS Integration////////////////////////////////////////////////////
@@ -251,8 +283,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             if (data && data.message && data.type) {
 
 
-
-                if(socket.agent ){
+                if (socket.agent) {
 
                     logger.info(data);
                     //io.to(socket.decoded_token.iss).emit('echo', data);
@@ -284,7 +315,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                     });
 
 
-
                     console.log(data);
                     io.sockets.adapter.clients([data.to], function (err, clients) {
                         if (err) {
@@ -311,7 +341,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                         }
                     });
 
-                }else{
+                } else {
 
                     socket.message_buffer.push(data);
                 }
@@ -354,12 +384,12 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
         socket.on('agent', function (data) {
             logger.info(data);
-            if(!socket.agent) {
+            if (!socket.agent) {
                 socket.agent = data.username;
 
-                if(socket.message_buffer){
+                if (socket.message_buffer) {
                     var preMessages = socket.message_buffer.shift();
-                    preMessages.forEach(function(item){
+                    preMessages.forEach(function (item) {
 
                         logger.info(data);
                         //io.to(socket.decoded_token.iss).emit('echo', data);
@@ -402,7 +432,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
                 }
 
-            }else{
+            } else {
 
                 io.in(data.username).emit("message", "Chat has routed to another user");
             }
@@ -413,10 +443,10 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
             logger.info(data);
             //socket.agent = data.username;
 
-            if(!socket.agent) {
+            if (!socket.agent) {
                 socket.agent = data.username;
                 io.in(agent).emit("existingclient", client_data);
-            }else{
+            } else {
 
                 io.in(data.username).emit("message", "Chat has routed to another user");
             }
@@ -466,5 +496,7 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
         });
     });
 });
+
+
 
 
