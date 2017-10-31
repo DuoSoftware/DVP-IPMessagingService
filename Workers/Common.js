@@ -37,7 +37,7 @@ var redisSetting =  {
 
 if(redismode == 'sentinel'){
 
-    if(config.Security.sentinels && config.Security.sentinels.hosts && config.Security.sentinels.port, config.Security.sentinels.name){
+    if(config.Security.sentinels && config.Security.sentinels.hosts && config.Security.sentinels.port && config.Security.sentinels.name){
         var sentinelHosts = config.Security.sentinels.hosts.split(',');
         if(Array.isArray(sentinelHosts) && sentinelHosts.length > 2){
             var sentinelConnections = [];
