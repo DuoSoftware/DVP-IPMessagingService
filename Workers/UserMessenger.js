@@ -520,7 +520,6 @@ io.sockets.on('connection',
             }
         });
 
-
         socket.on('tag', function (data) {
 
             if (data && data.to) {
@@ -549,8 +548,6 @@ io.sockets.on('connection',
                 //redisClient.del(onlineClientsUsers, redis.print);
             }
         });
-
-
 
         socket.on('typing', function (data) {
 
@@ -920,7 +917,6 @@ io.sockets.on('connection',
 
         });
 
-
         socket.on('unsubscribe', function(data){
 
             if(data && data.room){
@@ -935,62 +931,30 @@ io.sockets.on('connection',
         });
 
 
-        var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
-
-        var aggregator = [{
-            $match: queryObject
-        }, {
-            $group: {
-                _id: "$from",
-                messages: {$sum: 1}
-            }
-        }
-        ];
-
-        PersonalMessage.aggregate(aggregator, function (err, messages) {
-            if (err) {
-
-                logger.error('Get personal messages failed', err);
-            }
-            else {
-                if (messages) {
-
-                    io.to(socket.decoded_token.iss).emit("pending", messages);
-                }
-            }
-        });
-
-
-        /*
-         PersonalMessage.find(queryObject, function (err, messages) {
-         if (err) {
-
-         logger.error('Get personal messages failed',err);
-         }
-         else {
-         if(Array.isArray(messages) && messages.length > 0) {
-
-         messages.forEach(function(message){
-
-         var _message = {
-         from:message.from,
-         to:message.to,
-         message: message.data,
-         id: message.uuid
-         };
-
-         io.to(message.to).emit("message", _message);
-         message.status = 'delivered';
-
-         SaveMessage(message);
-
-
-         });
-         }
-         }
-         });
-
-         */
+        // var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
+        //
+        // var aggregator = [{
+        //     $match: queryObject
+        // }, {
+        //     $group: {
+        //         _id: "$from",
+        //         messages: {$sum: 1}
+        //     }
+        // }
+        // ];
+        //
+        // PersonalMessage.aggregate(aggregator, function (err, messages) {
+        //     if (err) {
+        //
+        //         logger.error('Get personal messages failed', err);
+        //     }
+        //     else {
+        //         if (messages) {
+        //
+        //             io.to(socket.decoded_token.iss).emit("pending", messages);
+        //         }
+        //     }
+        // });
 
 
     });
