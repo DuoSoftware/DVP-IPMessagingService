@@ -15,11 +15,12 @@ var adapter = require('socket.io-redis');
 var socketioJwt =  require("socketio-jwt");
 var secret = require('dvp-common/Authentication/Secret.js');
 var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
-var User = require('dvp-mongomodels/model/User');
+//var User = require('dvp-mongomodels/model/User');
 var PersonalMessage = require('dvp-mongomodels/model/Room').PersonalMessage;
 var Room = require('dvp-mongomodels/model/Room').Room;
 var Message = require('dvp-mongomodels/model/Room').Message;
 var ards = require('./Ards');
+var UserAccount = require('dvp-mongomodels/model/UserAccount');
 
 
 
@@ -412,18 +413,19 @@ io.sockets.on('connection',
             if (data && data.to) {
 
 
-                User.findOne({
+                UserAccount.findOne({
                         company: socket.decoded_token.company,
                         tenant: socket.decoded_token.tenant,
-                        username: socket.decoded_token.iss
+                        user: socket.decoded_token.iss
                     })
-                    .select("username name avatar firstname lastname")
-                    .exec(function (err, user) {
+                    .populate("userref", "username name avatar firstname lastname")
+                    .exec(function (err, userAccount) {
                         if (err) {
 
 
                         } else {
 
+                            var user = userAccount.userref;
                             if (user) {
 
                                 var agentData = {
