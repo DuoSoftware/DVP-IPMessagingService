@@ -142,10 +142,10 @@ pubclient.on("error", function (err) {
     logger.error("Error ",  err);
 });
 
-
 pubclient.on("error", function (err) {
     logger.error("Error ",  err);
 });
+
 subclient.on("node error", function (err) {
     logger.error("Error ",  err);
 });
