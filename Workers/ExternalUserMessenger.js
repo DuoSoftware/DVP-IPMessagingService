@@ -195,7 +195,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
 
     logger.info('hello! ' + socket.decoded_token.iss);
 
-
     Common.CreateEngagement(socket.decoded_token, function(error, profile) {
 
         socket.join(socket.decoded_token.jti);
