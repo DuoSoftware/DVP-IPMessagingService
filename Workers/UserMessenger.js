@@ -260,8 +260,6 @@ io.sockets.on('connection',
             }
         });
 
-
-
         redisClient.hgetall(onlineUsers, function (err, obj) {
             if (err) {
                 logger.error('No users status found in redis', err);
@@ -447,26 +445,101 @@ io.sockets.on('connection',
 
 
                                 var onlineClientsUsers = util.format("%d:%d:client:online:%s", client_data.tenant, client_data.company, data.jti);
+                                var messageBufferKey = util.format("%d:%d:client:buffer:%s", client_data.tenant, client_data.company, data.jti);
+
                                 data.agent = socket.decoded_token.iss;
                                 data.agentdata = agentData;
                                 var jsonData = JSON.stringify(data);
-                                redisClient.set(onlineClientsUsers, jsonData, redis.print);
+                                redisClient.set(onlineClientsUsers, jsonData, function(clientUserSet) {
 
 
-                                var message = PersonalMessage({
+                                    redisClient.lrange(messageBufferKey, 0, -1, function (err, replies) {
+                                        console.log(replies.length);
+                                        replies.forEach(function (reply, index) {
+                                            console.log("Reply " + index + ": " + JSON.parse(reply).title);
+                                            var msg = JSON.parse(reply);
+                                            msg.from = data.jti;
+                                            msg.time = Date.now();
+                                            var id = uuid.v1();
+                                            if (data.id)
+                                                id = data.id;
+                                            msg.id = id;
+                                            msg.status = 'delivered';
+                                            msg.to= socket.decoded_token.iss;
+                                            msg.who = 'client';
+                                            io.in(msg.to).emit("message", msg);
 
-                                    type: "accept",
-                                    created_at: Date.now(),
-                                    updated_at: Date.now(),
-                                    status: 'delivered',
-                                    uuid: uuid.v4(),
-                                    data: user.username,
-                                    from: socket.decoded_token.iss,
-                                    to: data.to
 
+                                            var message = PersonalMessage({
+
+                                                type: msg.type,
+                                                created_at: Date.now(),
+                                                updated_at: Date.now(),
+                                                status: 'delivered',
+                                                uuid: id,
+                                                data: msg.message,
+                                                from: data.jti,
+                                                to: socket.decoded_token.iss,
+                                                who : 'client'
+
+                                            });
+
+
+                                            SaveMessage(message);
+
+                                        });
+
+                                        redisClient.del(messageBufferKey);
+
+
+                                        // if(socket.message_buffer){
+                                        //     var preMessages = socket.message_buffer.shift();
+                                        //     preMessages.forEach(function(item){
+                                        //
+                                        //         logger.info(data);
+                                        //         //io.to(socket.decoded_token.iss).emit('echo', data);
+                                        //         data.from = socket.decoded_token.jti;
+                                        //         data.display = socket.decoded_token.name;
+                                        //         data.time = Date.now();
+                                        //         data.to = socket.agent;
+                                        //         data.who = 'client';
+                                        //
+                                        //         var id = uuid.v1();
+                                        //         if (data.id)
+                                        //             id = data.id;
+                                        //
+                                        //
+                                        //         var toRedisKey = util.format("%s:messaging:status", data.to);
+                                        //
+                                        //         var message = PersonalMessage({
+                                        //
+                                        //             type: item.type,
+                                        //             created_at: Date.now(),
+                                        //             updated_at: Date.now(),
+                                        //             status: 'pending',
+                                        //             uuid: id,
+                                        //             data: item.message,
+                                        //             session: socket.decoded_token.jti,
+                                        //             from: socket.decoded_token.jti,
+                                        //             to: item.to
+                                        //
+                                        //         });
+                                        //
+                                        //
+                                        //         item.id = id;
+                                        //         io.in(item.to).emit("message", item);
+                                        //         message.status = 'delivered';
+                                        //
+                                        //         SaveMessage(message);
+                                        //     })
+                                        //
+                                        //     socket.message_buffer = [];
+                                        //
+                                        // }
+
+
+                                    });
                                 });
-
-                                SaveMessage(message);
 
                             } else {
 
@@ -729,7 +802,7 @@ io.sockets.on('connection',
                             //created_at: {$gt: obj.created_at},
                             //$or: [{from: from, to: to}, {from: to, to: from}]
 
-                            PersonalMessage.find(query).sort({created_at: 1}).limit(100)
+                            PersonalMessage.find(query).lean().sort({created_at: 1}).limit(100)
                                 .exec(function (err, newmessages) {
 
                                     if (data) {
@@ -797,14 +870,17 @@ io.sockets.on('connection',
                         };
                     }
 
-                    PersonalMessage.find(query).sort({created_at: -1}).limit(100)
+                    PersonalMessage.find(query).lean().sort({created_at: -1}).limit(100)
                         .exec(function (err, latestmessages) {
 
                             if (latestmessages && Array.isArray(latestmessages)) {
-                                io.to(socket.decoded_token.iss).emit("latestmessages", {
+                                io.to(socket.decoded_token.iss).emit("latestmessages",{
                                     from: data.from,
                                     messages: latestmessages.reverse()
                                 });
+
+                                //io.to(socket.decoded_token.iss).emit("latestmessages", latestmessages.reverse());
+
                             } else {
                                 logger.error('No new message found');
                                 socket.emit('connectionerror', {
@@ -932,31 +1008,6 @@ io.sockets.on('connection',
 
         });
 
-
-        // var queryObject = {to: socket.decoded_token.iss, status: 'pending'};
-        //
-        // var aggregator = [{
-        //     $match: queryObject
-        // }, {
-        //     $group: {
-        //         _id: "$from",
-        //         messages: {$sum: 1}
-        //     }
-        // }
-        // ];
-        //
-        // PersonalMessage.aggregate(aggregator, function (err, messages) {
-        //     if (err) {
-        //
-        //         logger.error('Get personal messages failed', err);
-        //     }
-        //     else {
-        //         if (messages) {
-        //
-        //             io.to(socket.decoded_token.iss).emit("pending", messages);
-        //         }
-        //     }
-        // });
 
 
     });
