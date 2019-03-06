@@ -1,9 +1,21 @@
 var config = require("config");
 var aesjs = require('aes-js');
 
-var key_256 = config.Host.encryptedhex;
+var key_256 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,29, 30, 31];
 
 var key = Buffer.from(key_256);
+
+function setKeys(){
+    var ids = config.Host.encryptedhex;
+    if(ids){
+        var key_string_arr = ids.split(",");
+        key_256 = key_string_arr.map(function(item){
+            return parseInt(item);
+        });
+        key = Buffer.from(key_256);
+    }
+}
+setKeys();
 
 function encrypt(text) {
     try {
