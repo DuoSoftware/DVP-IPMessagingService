@@ -6,19 +6,27 @@ var key_256 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,16, 17, 18, 
 var key = Buffer.from(key_256);
 
 function setKeys(){
-    var ids = config.Host.encryptedhex;
-    if(ids){
-        var key_string_arr = ids.split(",");
-        key_256 = key_string_arr.map(function(item){
-            return parseInt(item);
-        });
-        key = Buffer.from(key_256);
+    try{
+        var ids = config.Host.encryptedhex;
+        if(ids){
+            var key_string_arr = ids.split(",");
+            key_256 = key_string_arr.map(function(item){
+                return parseInt(item);
+            });
+            key = Buffer.from(key_256);
+        }
+        console.log("Set Key ------------------------------");
     }
+    catch(ex){
+        console.error(ex);
+    }
+
 }
 setKeys();
 
 function encrypt(text) {
     try {
+        console.info("Call Encrypt Method..................");
         var textBytes = aesjs.utils.utf8.toBytes(text);
 
 // The counter is optional, and if omitted will begin at 1
@@ -36,6 +44,7 @@ function encrypt(text) {
 
 function decrypt(encryptedHex) {
     try {
+        console.info("Call Decrypt Method..................");
         var encryptedBytes = aesjs.utils.hex.toBytes(encryptedHex);
 
 // The counter mode of operation maintains internal state, so to
