@@ -22,7 +22,7 @@ function setKeys(){
     }
 
 }
-setKeys();
+//setKeys();
 
 function encrypt(text) {
     try {
