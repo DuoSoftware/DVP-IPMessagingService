@@ -61,6 +61,7 @@ setKeys();
 function encrypt(text) {
     try {
         console.info("Call Encrypt Method..................");
+        setKeys();
         var textBytes = aesjs.utils.utf8.toBytes(text);
 
 // The counter is optional, and if omitted will begin at 1
