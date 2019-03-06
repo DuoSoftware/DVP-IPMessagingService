@@ -17,8 +17,9 @@
   },
   "homepage": "https://github.com/DuoSoftware/DVP-IPMessagingService#readme",
   "dependencies": {
+    "aes-js": "^3.1.2",
     "config": "^1.24.0",
-    "dvp-common": "1.1.0",
+    "dvp-common": "^1.5.2",
     "dvp-mongomodels": "^5.2.5",
     "ioredis": "^3.1.1",
     "node-uuid": "^1.4.7",

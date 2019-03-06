@@ -21,8 +21,8 @@ var Room = require('dvp-mongomodels/model/Room').Room;
 var Message = require('dvp-mongomodels/model/Room').Message;
 var ards = require('./Ards');
 var UserAccount = require('dvp-mongomodels/model/UserAccount');
-
-
+var crypto_handler = require('./crypto_handler.js');
+var Common = require('./Common.js');
 
 
 var redisip = config.Redis.ip;
@@ -157,6 +157,8 @@ pubclient.on("node error", function (err) {
 
 var SaveMessage = function(message){
 
+    var e_text = crypto_handler.Encrypt(message.data);
+    message._doc.data = e_text;
     message.save(function (err, _message) {
         if (err) {
 
@@ -758,6 +760,7 @@ io.sockets.on('connection',
                                 .exec(function (err, oldmessages) {
 
                                     if (oldmessages) {
+                                        oldmessages = Common.DecryptMessages(oldmessages);
                                         socket.emit("oldmessages", {from:requester, messages:oldmessages});
                                     } else {
 
@@ -765,7 +768,7 @@ io.sockets.on('connection',
                                         socket.emit('connectionerror', {
                                             action: 'oldmessages',
                                             from:requester,
-                                            data: data,
+                                            data:  data,
                                             message: 'no data found'
                                         });
                                     }
@@ -806,6 +809,7 @@ io.sockets.on('connection',
                                 .exec(function (err, newmessages) {
 
                                     if (data) {
+                                        newmessages = Common.DecryptMessages(newmessages);
                                         io.to(socket.decoded_token.iss).emit("newmessages", newmessages);
                                     } else {
                                         logger.error('No new message found');
@@ -874,6 +878,7 @@ io.sockets.on('connection',
                         .exec(function (err, latestmessages) {
 
                             if (latestmessages && Array.isArray(latestmessages)) {
+                                latestmessages = Common.DecryptMessages(latestmessages);
                                 io.to(socket.decoded_token.iss).emit("latestmessages",{
                                     from: data.from,
                                     messages: latestmessages.reverse()
@@ -914,7 +919,7 @@ io.sockets.on('connection',
                         }
                         else {
                             if (messages) {
-
+                                messages = Common.DecryptMessages(messages);
                                 io.to(socket.decoded_token.iss).emit("pending", messages);
                             }
                         }

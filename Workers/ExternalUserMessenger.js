@@ -20,6 +20,7 @@ var Room = require('dvp-mongomodels/model/Room').Room;
 var Message = require('dvp-mongomodels/model/Room').Message;
 var Common = require('./Common.js');
 var ards = require('./Ards');
+var crypto_handler = require('./crypto_handler.js');
 
 
 var redisip = config.Redis.ip;
@@ -148,6 +149,7 @@ subclient.on("node error", function (err) {
 //////////////////////////////save before send might be a good idea////////////////////
 var SaveMessage = function(message){
 
+    message.data = crypto_handler.Encrypt(message.data);
     message.save(function (err, _message) {
         if (err) {
 

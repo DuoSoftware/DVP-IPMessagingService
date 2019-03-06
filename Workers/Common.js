@@ -7,7 +7,7 @@ var config = require('config');
 var request = require("request");
 var validator = require('validator');
 var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
-var token = util.format("Bearer %s",config.Host.token);
+var token = util.format("Bearer %s", config.Host.token);
 var uuid = require('node-uuid');
 var redis = require('ioredis');
 
@@ -17,11 +17,11 @@ var redispass = config.Security.password;
 var redismode = config.Security.mode;
 var redisdb = config.Security.db;
 
+var crypto_handler = require('./crypto_handler.js');
 
-
-var redisSetting =  {
-    port:redisport,
-    host:redisip,
+var redisSetting = {
+    port: redisport,
+    host: redisip,
     family: 4,
     db: redisdb,
     password: redispass,
@@ -35,26 +35,26 @@ var redisSetting =  {
     }
 };
 
-if(redismode == 'sentinel'){
+if (redismode == 'sentinel') {
 
-    if(config.Security.sentinels && config.Security.sentinels.hosts && config.Security.sentinels.port && config.Security.sentinels.name){
+    if (config.Security.sentinels && config.Security.sentinels.hosts && config.Security.sentinels.port && config.Security.sentinels.name) {
         var sentinelHosts = config.Security.sentinels.hosts.split(',');
-        if(Array.isArray(sentinelHosts) && sentinelHosts.length > 2){
+        if (Array.isArray(sentinelHosts) && sentinelHosts.length > 2) {
             var sentinelConnections = [];
 
-            sentinelHosts.forEach(function(item){
+            sentinelHosts.forEach(function (item) {
 
-                sentinelConnections.push({host: item, port:config.Security.sentinels.port})
+                sentinelConnections.push({host: item, port: config.Security.sentinels.port})
 
             })
 
             redisSetting = {
-                sentinels:sentinelConnections,
+                sentinels: sentinelConnections,
                 name: config.Security.sentinels.name,
-                password:redispass
+                password: redispass
             }
 
-        }else{
+        } else {
 
             console.log("No enough sentinel servers found .........");
         }
@@ -64,26 +64,27 @@ if(redismode == 'sentinel'){
 
 var redisClient = undefined;
 
-if(redismode != "cluster") {
+if (redismode != "cluster") {
     redisClient = new redis(redisSetting);
-}else{
+} else {
 
     var redisHosts = redisip.split(",");
-    if(Array.isArray(redisHosts)){
+    if (Array.isArray(redisHosts)) {
 
 
         redisSetting = [];
-        redisHosts.forEach(function(item){
+        redisHosts.forEach(function (item) {
             redisSetting.push({
                 host: item,
                 port: redisport,
                 family: 4,
-                password: redispass});
+                password: redispass
+            });
         });
 
         var redisClient = new redis.Cluster([redisSetting]);
 
-    }else{
+    } else {
 
         redisClient = new redis(redisSetting);
     }
@@ -93,7 +94,7 @@ if(redismode != "cluster") {
 
 
 redisClient.on("error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 
 });
 
@@ -104,11 +105,11 @@ redisClient.on("connected", function () {
 });
 
 
-module.exports.CompanyChatSecret = function(req, payload, done){
+module.exports.CompanyChatSecret = function (req, payload, done) {
 
     //var session = uuid.v1();
 
-    if(payload && payload.iss && payload.jti && payload.name && payload.company && payload.tenant) {
+    if (payload && payload.iss && payload.jti && payload.name && payload.company && payload.tenant) {
         var issuer = payload.iss;
         var jti = payload.jti;
 
@@ -122,47 +123,47 @@ module.exports.CompanyChatSecret = function(req, payload, done){
             }
             if (!key) {
                 return done(new Error('missing_secret'));
-            }else{
+            } else {
 
                 return done(null, key);
             }
         });
-    }else{
+    } else {
         done(new Error('wrong token format'));
     }
 };
 
-module.exports.CreateEngagement = function (payload,  cb){
+module.exports.CreateEngagement = function (payload, cb) {
 
-    if((config.Services && config.Services.interactionurl && config.Services.interactionport && config.Services.interactionversion)) {
+    if ((config.Services && config.Services.interactionurl && config.Services.interactionport && config.Services.interactionversion)) {
 
 
         var engagementURL = util.format("http://%s/DVP/API/%s/EngagementSessionForProfile", config.Services.interactionurl, config.Services.interactionversion);
         if (validator.isIP(config.Services.interactionurl))
             engagementURL = util.format("http://%s:%d/DVP/API/%s/EngagementSessionForProfile", config.Services.interactionurl, config.Services.interactionport, config.Services.interactionversion);
 
-        var engagementData =  {
+        var engagementData = {
             "engagement_id": payload.jti,
             "channel": 'chat',
             "direction": 'inbound',
-            "channel_from":payload.name,
+            "channel_from": payload.name,
             "channel_to": payload.iss
         };
 
-        if(payload.session_id)
+        if (payload.session_id)
             engagementData.engagement_id = payload.session_id;
 
 
-        if(payload.channel){
+        if (payload.channel) {
             engagementData.channel = payload.channel;
         }
 
-        if(payload.jti){
+        if (payload.jti) {
             engagementData.channel_id = payload.jti;
             //req.body.channel_id
         }
 
-        if(payload.contact){
+        if (payload.contact) {
             engagementData.raw = payload.contact;
         }
 
@@ -191,9 +192,9 @@ module.exports.CreateEngagement = function (payload,  cb){
 
                     return cb(null, profile);
 
-                }else{
+                } else {
 
-                    logger.error("There is an error in  create engagements for this session "+ payload.jit);
+                    logger.error("There is an error in  create engagements for this session " + payload.jit);
                     //done(new Error('engagement_failed'));
                     return cb(_error);
 
@@ -206,12 +207,25 @@ module.exports.CreateEngagement = function (payload,  cb){
 
             }
         });
-    }else{
+    } else {
 
         return done(new Error('missing_config'));
     }
 
-}
+};
+
+module.exports.DecryptMessages = function (messages) {
+
+    try {
+       return messages.map(function (item) {
+            item.data = crypto_handler.Decrypt(item.data);
+            return item;
+        })
+    } catch (ex) {
+        console.error(ex);
+        return messages;
+    }
+};
 
 
 
