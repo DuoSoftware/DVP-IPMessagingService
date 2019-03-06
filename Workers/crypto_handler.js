@@ -95,7 +95,7 @@ function test(text){
 function encrypt(text) {
     try {
         console.info("Call Encrypt Method..................----------------------");
-        test();
+        test(text);
         console.info("Call Encrypt Method..................");
         var textBytes = aesjs.utils.utf8.toBytes(text);
 
@@ -117,6 +117,7 @@ function encrypt(text) {
 function decrypt(encryptedHex) {
     try {
         console.info("Call Decrypt Method..................");
+        console.info(encryptedHex);
         var encryptedBytes = aesjs.utils.hex.toBytes(encryptedHex);
 
 // The counter mode of operation maintains internal state, so to
@@ -127,6 +128,7 @@ function decrypt(encryptedHex) {
 // Convert our bytes back into text
         var decryptedText = aesjs.utils.utf8.fromBytes(decryptedBytes);
         console.log(decryptedText);
+        return decryptedText;
     }
     catch (ex) {
         console.error(ex);
