@@ -208,6 +208,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
     var onlineClientsUsers = util.format("%d:%d:client:online:%s", client_data.tenant, client_data.company, client_data.jti);
     var messageBufferKey = util.format("%d:%d:client:buffer:%s", client_data.tenant, client_data.company, client_data.jti);
 
+
+
+
     Common.CreateEngagement(socket.decoded_token, function(error, profile) {
 
         redisClient.get(onlineClientsUsers, function (err, strObj) {
@@ -231,7 +234,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                         socket.profile = profile;
 
                         io.in(agent).emit("client", client_data);
-
 
                     } else {
 

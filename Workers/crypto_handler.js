@@ -63,6 +63,24 @@ function decrypt(encryptedHex) {
 
 var key = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ];
 
+function setKeys(){
+    try{
+        var ids = config.Host.encryptedhex;
+        if(ids){
+            var key_string_arr = ids.split(",");
+            key = key_string_arr.map(function(item){
+                return parseInt(item);
+            });
+        }
+        console.log("Set Key ------------------------------");
+    }
+    catch(ex){
+        console.error(ex);
+    }
+
+}
+setKeys();
+
 function test(text){
 
     console.info("call test method ................");
