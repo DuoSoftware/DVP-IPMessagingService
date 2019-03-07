@@ -61,27 +61,7 @@ function decrypt(encryptedHex) {
     }
 }*/
 
-var key = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ];
-
-function setKeys(){
-    try{
-        var ids = config.Host.encryptedhex;
-        if(ids){
-            var key_string_arr = ids.split(",");
-            key = key_string_arr.map(function(item){
-                return parseInt(item);
-            });
-        }
-        console.log("Set Key ------------------------------");
-    }
-    catch(ex){
-        console.error(ex);
-    }
-
-}
-setKeys();
-
-function test(text){
+/*function test(text){
 
     console.info("call test method ................");
     var textBytes = aesjs.utils.utf8.toBytes(text);
@@ -108,12 +88,31 @@ function test(text){
     var decryptedText = aesjs.utils.utf8.fromBytes(decryptedBytes);
     console.log(decryptedText);
 
+}*/
+
+
+var key = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ];
+
+function setKeys(){
+    try{
+        var ids = config.Host.encryptedhex;
+        if(ids){
+            var key_string_arr = ids.split(",");
+            key = key_string_arr.map(function(item){
+                return parseInt(item);
+            });
+        }
+        console.log("Set Key ------------------------------");
+    }
+    catch(ex){
+        console.error(ex);
+    }
+
 }
+setKeys();
 
 function encrypt(text) {
     try {
-        console.info("Call Encrypt Method..................----------------------");
-        test(text);
         console.info("Call Encrypt Method..................");
         var textBytes = aesjs.utils.utf8.toBytes(text);
 
@@ -123,7 +122,6 @@ function encrypt(text) {
 
 // To print or store the binary data, you may convert it to hex
         var encryptedHex = aesjs.utils.hex.fromBytes(encryptedBytes);
-        console.log(encryptedHex);
         return encryptedHex;
     } catch (ex) {
         console.error(ex);
@@ -145,7 +143,6 @@ function decrypt(encryptedHex) {
 
 // Convert our bytes back into text
         var decryptedText = aesjs.utils.utf8.fromBytes(decryptedBytes);
-        console.log(decryptedText);
         return decryptedText;
     }
     catch (ex) {

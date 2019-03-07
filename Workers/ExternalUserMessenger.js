@@ -149,7 +149,8 @@ subclient.on("node error", function (err) {
 //////////////////////////////save before send might be a good idea////////////////////
 var SaveMessage = function(message){
 
-    message.data = crypto_handler.Encrypt(message.data);
+    var e_text = crypto_handler.Encrypt(message.data);
+    message._doc.data = e_text;
     message.save(function (err, _message) {
         if (err) {
 
