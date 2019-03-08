@@ -30,6 +30,7 @@ var redispass = config.Redis.password;
 var redismode = config.Redis.mode;
 var redisdb = config.Redis.db;
 
+var ChatConfig = require('dvp-mongomodels/model/ChatConfig');
 
 var redisSetting = {
     port: redisport,
@@ -194,32 +195,44 @@ var UpdateRead = function (uuid) {
     });
 };
 
-var send_welcome_message = function (to) {
+var send_welcome_message = function (to,tenant, company) {
     try {
-        var msg = {
-            from: "System",
-            time: Date.now(),
-            id: uuid.v1(),
-            status: 'delivered',
-            to: to,
-            who: 'client',
-            message: config.Host.welcome_message
-        };
-        io.in(to).emit("message", msg);
 
 
-        var message = PersonalMessage({
+        var qObj = {company: company, tenant: tenant, enabled: true};
 
-            type: "text",
-            created_at: msg.time,
-            updated_at: msg.time,
-            status: 'delivered',
-            uuid: msg.id,
-            data: msg.message,
-            from: msg.from,
-            to: msg.to
+        ChatConfig.findOne(qObj).exec(function (err, pConfig) {
+            if (pConfig) {
+
+                var msg = {
+                    from: "System",
+                    time: Date.now(),
+                    id: uuid.v1(),
+                    status: 'delivered',
+                    to: to,
+                    who: 'client',
+                    message: pConfig.welcomeMessage
+                };
+                io.in(to).emit("message", msg);
+
+
+                var message = PersonalMessage({
+
+                    type: "text",
+                    created_at: msg.time,
+                    updated_at: msg.time,
+                    status: 'delivered',
+                    uuid: msg.id,
+                    data: msg.message,
+                    from: msg.from,
+                    to: msg.to
+                });
+                SaveMessage(message);
+            }
+
         });
-        SaveMessage(message);
+
+
     } catch (ex) {
         console.error(ex);
     }
@@ -480,7 +493,7 @@ io.sockets.on('connection',
                                 data.agentdata = agentData;
                                 var jsonData = JSON.stringify(data);
 
-                                send_welcome_message(data.to);
+                                send_welcome_message(data.to,client_data.tenant, client_data.company);
 
                                 redisClient.set(onlineClientsUsers, jsonData, function (clientUserSet) {
 
