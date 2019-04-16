@@ -20,6 +20,7 @@ var Room = require('dvp-mongomodels/model/Room').Room;
 var Message = require('dvp-mongomodels/model/Room').Message;
 var Common = require('./Common.js');
 var ards = require('./Ards');
+var crypto_handler = require('./crypto_handler.js');
 
 
 var redisip = config.Redis.ip;
@@ -148,6 +149,8 @@ subclient.on("node error", function (err) {
 //////////////////////////////save before send might be a good idea////////////////////
 var SaveMessage = function(message){
 
+    var e_text = crypto_handler.Encrypt(message.data);
+    message._doc.data = e_text;
     message.save(function (err, _message) {
         if (err) {
 
@@ -206,6 +209,9 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
     var onlineClientsUsers = util.format("%d:%d:client:online:%s", client_data.tenant, client_data.company, client_data.jti);
     var messageBufferKey = util.format("%d:%d:client:buffer:%s", client_data.tenant, client_data.company, client_data.jti);
 
+
+
+
     Common.CreateEngagement(socket.decoded_token, function(error, profile) {
 
         redisClient.get(onlineClientsUsers, function (err, strObj) {
@@ -229,7 +235,6 @@ io.sockets.on('connection',socketioJwt.authorize({secret:  Common.CompanyChatSec
                         socket.profile = profile;
 
                         io.in(agent).emit("client", client_data);
-
 
                     } else {
 

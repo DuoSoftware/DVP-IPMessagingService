@@ -49,7 +49,8 @@ module.exports = {
         "domain": "HOST_NAME",
         "port": "HOST_IPMESSANGERSERVICE_PORT",
         "version": "HOST_VERSION",
-		"token": "HOST_TOKEN"
+		"token": "HOST_TOKEN",
+        "encryptedhex": "HOST_ENCRYPTEDHEX"
     },
 
     "LBServer" : {

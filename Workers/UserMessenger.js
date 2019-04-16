@@ -7,12 +7,11 @@ var uuid = require('node-uuid');
 var port = config.Host.internalport || 3000;
 
 
-
 var io = require('socket.io')(port);
 var redis = require('ioredis');
 var adapter = require('socket.io-redis');
 //var adapter = require('socket.io-ioredis');
-var socketioJwt =  require("socketio-jwt");
+var socketioJwt = require("socketio-jwt");
 var secret = require('dvp-common/Authentication/Secret.js');
 var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
 //var User = require('dvp-mongomodels/model/User');
@@ -21,8 +20,8 @@ var Room = require('dvp-mongomodels/model/Room').Room;
 var Message = require('dvp-mongomodels/model/Room').Message;
 var ards = require('./Ards');
 var UserAccount = require('dvp-mongomodels/model/UserAccount');
-
-
+var crypto_handler = require('./crypto_handler.js');
+var Common = require('./Common.js');
 
 
 var redisip = config.Redis.ip;
@@ -31,11 +30,11 @@ var redispass = config.Redis.password;
 var redismode = config.Redis.mode;
 var redisdb = config.Redis.db;
 
+var ChatConfig = require('dvp-mongomodels/model/ChatConfig');
 
-
-var redisSetting =  {
-    port:redisport,
-    host:redisip,
+var redisSetting = {
+    port: redisport,
+    host: redisip,
     family: 4,
     password: redispass,
     db: redisdb,
@@ -50,27 +49,26 @@ var redisSetting =  {
 };
 
 
+if (redismode == 'sentinel') {
 
-if(redismode == 'sentinel'){
-
-    if(config.Redis.sentinels && config.Redis.sentinels.hosts && config.Redis.sentinels.port && config.Redis.sentinels.name){
+    if (config.Redis.sentinels && config.Redis.sentinels.hosts && config.Redis.sentinels.port && config.Redis.sentinels.name) {
         var sentinelHosts = config.Redis.sentinels.hosts.split(',');
-        if(Array.isArray(sentinelHosts) && sentinelHosts.length > 2){
+        if (Array.isArray(sentinelHosts) && sentinelHosts.length > 2) {
             var sentinelConnections = [];
 
-            sentinelHosts.forEach(function(item){
+            sentinelHosts.forEach(function (item) {
 
-                sentinelConnections.push({host: item, port:config.Redis.sentinels.port})
+                sentinelConnections.push({host: item, port: config.Redis.sentinels.port})
 
             })
 
             redisSetting = {
-                sentinels:sentinelConnections,
+                sentinels: sentinelConnections,
                 name: config.Redis.sentinels.name,
                 password: redispass
             }
 
-        }else{
+        } else {
 
             console.log("No enough sentinel servers found .........");
         }
@@ -79,33 +77,34 @@ if(redismode == 'sentinel'){
 }
 
 var redisClient = undefined;
-var  pubclient = undefined;
+var pubclient = undefined;
 var subclient = undefined;
 
-if(redismode != "cluster") {
+if (redismode != "cluster") {
     redisClient = new redis(redisSetting);
     pubclient = new redis(redisSetting);
     subclient = new redis(redisSetting);
-}else{
+} else {
 
     var redisHosts = redisip.split(",");
-    if(Array.isArray(redisHosts)){
+    if (Array.isArray(redisHosts)) {
 
 
         redisSetting = [];
-        redisHosts.forEach(function(item){
+        redisHosts.forEach(function (item) {
             redisSetting.push({
                 host: item,
                 port: redisport,
                 family: 4,
-                password: redispass});
+                password: redispass
+            });
         });
 
         redisClient = new redis.Cluster([redisSetting]);
         pubclient = new redis.Cluster([redisSetting]);
         subclient = new redis.Cluster([redisSetting]);
 
-    }else{
+    } else {
 
         redisClient = new redis(redisSetting);
         pubclient = redis(redisSetting);
@@ -116,21 +115,18 @@ if(redismode != "cluster") {
 }
 
 
-
 //var pub = redis(redisport, redisip, { auth_pass: redispass });
 //var sub = redis(redisport, redisip, { auth_pass: redispass });
-io.adapter(adapter({ pubClient: pubclient, subClient: subclient}));
-
-
+io.adapter(adapter({pubClient: pubclient, subClient: subclient}));
 
 
 redisClient.on("error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 
 });
 
 redisClient.on("node error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 
 });
 
@@ -139,71 +135,117 @@ redisClient.on("connect", function () {
 });
 
 pubclient.on("error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 
 pubclient.on("error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 
 subclient.on("node error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 
 pubclient.on("node error", function (err) {
-    logger.error("Error ",  err);
+    logger.error("Error ", err);
 });
 
 
-var SaveMessage = function(message){
+var SaveMessage = function (message) {
 
+    var e_text = crypto_handler.Encrypt(message.data);
+    message._doc.data = e_text;
     message.save(function (err, _message) {
         if (err) {
 
-            logger.error('Save message failed ',err);
+            logger.error('Save message failed ', err);
 
-        } else{
+        } else {
 
-            if(_message){
+            if (_message) {
 
                 logger.info("Message saved ");
 
-            }else{
+            } else {
 
-                logger.error('Save message failed ',err);
+                logger.error('Save message failed ', err);
             }
         }
     });
 };
 
-var UpdateRead = function(uuid){
+var UpdateRead = function (uuid) {
 
-    PersonalMessage.findOneAndUpdate({uuid:uuid},{status:'seen'},function (err, _message) {
+    PersonalMessage.findOneAndUpdate({uuid: uuid}, {status: 'seen'}, function (err, _message) {
         if (err) {
 
-            logger.error('Update seen message failed ',err);
+            logger.error('Update seen message failed ', err);
 
-        } else{
+        } else {
 
-            if(_message){
+            if (_message) {
 
                 logger.info("Update seen saved ");
 
-            }else{
+            } else {
 
-                logger.error('Update seen message failed ',err);
+                logger.error('Update seen message failed ', err);
             }
         }
     });
 };
 
+var send_welcome_message = function (to,tenant, company) {
+    try {
+
+
+        var qObj = {company: company, tenant: tenant, enabled: true};
+
+        ChatConfig.findOne(qObj).exec(function (err, pConfig) {
+            if (pConfig) {
+
+                var msg = {
+                    from: "System",
+                    time: Date.now(),
+                    id: uuid.v1(),
+                    status: 'delivered',
+                    to: to,
+                    who: 'client',
+                    message: pConfig.welcomeMessage
+                };
+                io.in(to).emit("message", msg);
+
+
+                var message = PersonalMessage({
+
+                    type: "text",
+                    created_at: msg.time,
+                    updated_at: msg.time,
+                    status: 'delivered',
+                    uuid: msg.id,
+                    data: msg.message,
+                    from: msg.from,
+                    to: msg.to
+                });
+                SaveMessage(message);
+            }
+
+        });
+
+
+    } catch (ex) {
+        console.error(ex);
+    }
+
+};
+
 io.sockets.on('connection',
-    socketioJwt.authorize({secret:  secret.Secret, timeout: 15000}))
-    .on('authenticated',function (socket) {
+    socketioJwt.authorize({secret: secret.Secret, timeout: 15000}))
+    .on('authenticated', function (socket) {
 
 
         socket.join(socket.decoded_token.iss);
-        logger.info("Joining to the room "+socket.decoded_token.iss);
+        logger.info("Joining to the room " + socket.decoded_token.iss);
 
         logger.info('hello! ' + socket.decoded_token.iss);
 
@@ -412,10 +454,10 @@ io.sockets.on('connection',
 
 
                 UserAccount.findOne({
-                        company: socket.decoded_token.company,
-                        tenant: socket.decoded_token.tenant,
-                        user: socket.decoded_token.iss
-                    })
+                    company: socket.decoded_token.company,
+                    tenant: socket.decoded_token.tenant,
+                    user: socket.decoded_token.iss
+                })
                     .populate("userref", "username name avatar firstname lastname")
                     .exec(function (err, userAccount) {
                         if (err) {
@@ -450,7 +492,10 @@ io.sockets.on('connection',
                                 data.agent = socket.decoded_token.iss;
                                 data.agentdata = agentData;
                                 var jsonData = JSON.stringify(data);
-                                redisClient.set(onlineClientsUsers, jsonData, function(clientUserSet) {
+
+                                send_welcome_message(data.to,client_data.tenant, client_data.company);
+
+                                redisClient.set(onlineClientsUsers, jsonData, function (clientUserSet) {
 
 
                                     redisClient.lrange(messageBufferKey, 0, -1, function (err, replies) {
@@ -465,7 +510,7 @@ io.sockets.on('connection',
                                                 id = data.id;
                                             msg.id = id;
                                             msg.status = 'delivered';
-                                            msg.to= socket.decoded_token.iss;
+                                            msg.to = socket.decoded_token.iss;
                                             msg.who = 'client';
                                             io.in(msg.to).emit("message", msg);
 
@@ -480,7 +525,7 @@ io.sockets.on('connection',
                                                 data: msg.message,
                                                 from: data.jti,
                                                 to: socket.decoded_token.iss,
-                                                who : 'client'
+                                                who: 'client'
 
                                             });
 
@@ -562,7 +607,7 @@ io.sockets.on('connection',
 
         socket.on('ticket', function (data) {
 
-                io.to(data.to).emit("ticket", data);
+            io.to(data.to).emit("ticket", data);
 
         });
 
@@ -666,7 +711,7 @@ io.sockets.on('connection',
                 case 'clients':
 
                     io.sockets.adapter.clients([data.room], function (err, clients) {
-                        if(clients){
+                        if (clients) {
                             socket.emit("clients", clients);
                         }
                     });
@@ -741,7 +786,7 @@ io.sockets.on('connection',
                             $or: [{from: from, to: to}, {from: to, to: from}]
                         };
 
-                        if(data.who && data.who === "client"){
+                        if (data.who && data.who === "client") {
                             query = {
                                 created_at: {$lt: obj.created_at},
                                 $or: [{from: customer}, {to: customer}]
@@ -758,13 +803,14 @@ io.sockets.on('connection',
                                 .exec(function (err, oldmessages) {
 
                                     if (oldmessages) {
-                                        socket.emit("oldmessages", {from:requester, messages:oldmessages});
+                                        oldmessages = Common.DecryptMessages(oldmessages);
+                                        socket.emit("oldmessages", {from: requester, messages: oldmessages});
                                     } else {
 
                                         logger.error('No old message found');
                                         socket.emit('connectionerror', {
                                             action: 'oldmessages',
-                                            from:requester,
+                                            from: requester,
                                             data: data,
                                             message: 'no data found'
                                         });
@@ -792,7 +838,7 @@ io.sockets.on('connection',
                                 $or: [{from: from, to: to}, {from: to, to: from}]
                             };
 
-                            if(data.who && data.who === "client"){
+                            if (data.who && data.who === "client") {
                                 query = {
                                     created_at: {$gt: obj.created_at},
                                     $or: [{from: customer}, {to: customer}]
@@ -806,6 +852,7 @@ io.sockets.on('connection',
                                 .exec(function (err, newmessages) {
 
                                     if (data) {
+                                        newmessages = Common.DecryptMessages(newmessages);
                                         io.to(socket.decoded_token.iss).emit("newmessages", newmessages);
                                     } else {
                                         logger.error('No new message found');
@@ -828,7 +875,6 @@ io.sockets.on('connection',
                     var to = socket.decoded_token.iss;
 
                     PersonalMessage.find({to: from, type: 'tag'}, function (err, data) {
-
 
 
                         if (data) {
@@ -863,7 +909,7 @@ io.sockets.on('connection',
                         $or: [{from: from, to: to}, {from: to, to: from}]
                     };
 
-                    if(data.who && data.who === "client"){
+                    if (data.who && data.who === "client") {
 
                         query = {
                             $or: [{from: from}, {to: from}]
@@ -874,7 +920,8 @@ io.sockets.on('connection',
                         .exec(function (err, latestmessages) {
 
                             if (latestmessages && Array.isArray(latestmessages)) {
-                                io.to(socket.decoded_token.iss).emit("latestmessages",{
+                                latestmessages = Common.DecryptMessages(latestmessages);
+                                io.to(socket.decoded_token.iss).emit("latestmessages", {
                                     from: data.from,
                                     messages: latestmessages.reverse()
                                 });
@@ -914,7 +961,7 @@ io.sockets.on('connection',
                         }
                         else {
                             if (messages) {
-
+                                messages = Common.DecryptMessages(messages);
                                 io.to(socket.decoded_token.iss).emit("pending", messages);
                             }
                         }
@@ -945,8 +992,8 @@ io.sockets.on('connection',
         socket.on('disconnect', function (reason) {
 
 
-            console.log("Bye " + socket.decoded_token.iss + " Reason: "+reason);
-            io.sockets.adapter.clients([ socket.decoded_token.iss], function (err, clients) {
+            console.log("Bye " + socket.decoded_token.iss + " Reason: " + reason);
+            io.sockets.adapter.clients([socket.decoded_token.iss], function (err, clients) {
                 if (err) {
 
                     logger.error('No user available in room :', err);
@@ -981,33 +1028,32 @@ io.sockets.on('connection',
 
         });
 
-        socket.on('subscribe', function(data){
+        socket.on('subscribe', function (data) {
 
             //queue:details
-            if(data && data.room){
+            if (data && data.room) {
 
-                var uniqueRoom = util.format('%d:%d:subscribe:%s', socket.decoded_token.tenant, socket.decoded_token.company,data.room)
+                var uniqueRoom = util.format('%d:%d:subscribe:%s', socket.decoded_token.tenant, socket.decoded_token.company, data.room)
                 socket.join(uniqueRoom);
 
-            }else{
+            } else {
                 socket.emit('error', {action: 'subscribe', message: 'no data found'});
             }
 
         });
 
-        socket.on('unsubscribe', function(data){
+        socket.on('unsubscribe', function (data) {
 
-            if(data && data.room){
+            if (data && data.room) {
 
-                var uniqueRoom = util.format('%d:%d:subscribe:%s', socket.decoded_token.tenant, socket.decoded_token.company,data.room)
+                var uniqueRoom = util.format('%d:%d:subscribe:%s', socket.decoded_token.tenant, socket.decoded_token.company, data.room)
                 socket.leave(uniqueRoom);
 
-            }else{
+            } else {
                 socket.emit('error', {action: 'subscribe', message: 'no data found'});
             }
 
         });
-
 
 
     });
