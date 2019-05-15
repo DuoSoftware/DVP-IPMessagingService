@@ -22,13 +22,15 @@ var ards = require('./Ards');
 var UserAccount = require('dvp-mongomodels/model/UserAccount');
 var crypto_handler = require('./crypto_handler.js');
 var Common = require('./Common.js');
-
-
+var messageFormatter = require('dvp-common/CommonMessageGenerator/ClientMessageJsonFormatter.js');
+var validator = require('validator');
 var redisip = config.Redis.ip;
 var redisport = config.Redis.port;
 var redispass = config.Redis.password;
 var redismode = config.Redis.mode;
 var redisdb = config.Redis.db;
+
+var bot_usr_redis_id = config.Host.botclientusers;
 
 var ChatConfig = require('dvp-mongomodels/model/ChatConfig');
 
@@ -195,7 +197,99 @@ var UpdateRead = function (uuid) {
     });
 };
 
-var send_welcome_message = function (to,tenant, company) {
+var io_emit_message = function (event_name, io_in_o_io_to, data, post_data) {
+
+    try {
+        var jsonString = "io_emit_message - done";
+        redisClient.hget(bot_usr_redis_id, data.sessionId, function (err, obj) {
+            if (obj) {
+                var session_data = JSON.parse(obj);
+                if (session_data.communication_type === "http") {
+                    var service_url = util.format("http://%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiversion, data.jti);
+                    if (validator.isIP(config.Services.ipmessagingapiurl)) {
+                        service_url = util.format("http://%s:%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiport, config.Services.ipmessagingapiversion, data.jti);
+                    }
+                    post_data.event_name = event_name;
+                    var postdetails = Object.assign({}, post_data, data);
+                    Common.http_post(service_url, postdetails, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company))
+                } else {
+                    if (io_in_o_io_to === "to") {
+                        io.to(data.to).emit(event_name, post_data);
+                    }
+                    else if (io_in_o_io_to === "in") {
+                        io.in(data.to).emit(event_name, post_data);
+                    } else {
+                        logger.error("invalid io_in_o_io_to params");
+                    }
+                }
+            } else {
+
+                if (io_in_o_io_to === "to") {
+                    io.to(data.to).emit(event_name, post_data);
+                }
+                else if (io_in_o_io_to === "in") {
+                    io.in(data.to).emit(event_name, post_data);
+                } else {
+                    logger.error("invalid io_in_o_io_to params");
+                }
+
+            }
+            logger.info(jsonString);
+        });
+    } catch (ex) {
+        logger.error('io_emit_message', ex);
+    }
+};
+
+var socket_emit_message = function (event_name, post_data) {
+
+    try {
+
+        socket.emit(event_name, {
+            from: post_data.to,
+            to: post_data.iss,
+            id: post_data.id,
+            status: status.status
+        });
+
+        return;
+
+        var jsonString = "socket_emit_message - done";
+        redisClient.hget(bot_usr_redis_id, data.sessionId, function (err, obj) {
+            if (obj) {
+                var session_data = JSON.parse(obj);
+                if (session_data.communication_type === "http") {
+                    var service_url = util.format("http://%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiversion, data.jti);
+                    if (validator.isIP(config.Services.ipmessagingapiurl)) {
+                        service_url = util.format("http://%s:%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiport, config.Services.ipmessagingapiversion, data.jti);
+                    }
+                    post_data.event_name = event_name;
+                    Common.http_post(service_url, post_data, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company))
+                } else {
+                    socket.emit(event_name, {
+                        from: post_data.to,
+                        to: post_data.iss,
+                        id: post_data.id,
+                        status: status.status
+                    });
+                    //'seen', {from: data.to,to: socket.decoded_token.iss,id: id,status: 'nouser'}
+                }
+            } else {
+                socket.emit(event_name, {
+                    from: post_data.to,
+                    to: post_data.iss,
+                    id: post_data.id,
+                    status: status.status
+                });
+            }
+            logger.info(jsonString);
+        });
+    } catch (ex) {
+        logger.error('io_emit_message', ex);
+    }
+};
+
+var send_welcome_message = function (data, tenant, company) {
     try {
 
 
@@ -209,12 +303,12 @@ var send_welcome_message = function (to,tenant, company) {
                     time: Date.now(),
                     id: uuid.v1(),
                     status: 'delivered',
-                    to: to,
+                    to: data.to,
                     who: 'client',
                     message: pConfig.welcomeMessage
                 };
-                io.in(to).emit("message", msg);
-
+                //io.in(to).emit("message", msg);
+                io_emit_message("message", "in", data, msg);
 
                 var message = PersonalMessage({
 
@@ -369,44 +463,70 @@ io.sockets.on('connection',
 
                 });
 
-                io.sockets.adapter.clients([data.to], function (err, clients) {
-                    if (err) {
-                        socket.emit('seen', {from: data.to, to: socket.decoded_token.iss, id: id, status: 'nouser'});
-                        io.to(data.to).emit("message", data);
-                        logger.error('No user available in room', err);
-                        SaveMessage(message);
-
-                    } else {
-                        if (Array.isArray(clients) && clients.length > 0) {
-
-
-                            data.status = 'delivered';
-                            data.id = id;
-                            io.to(data.to).emit("message", data);
-                            socket.emit('seen', {
-                                from: data.to,
-                                to: socket.decoded_token.iss,
-                                id: id,
-                                status: 'delivered'
-                            });
-                            message.status = 'delivered';
-
-                            SaveMessage(message);
-
-                        } else {
-
+                function message_using_io(message) {
+                    io.sockets.adapter.clients([data.to], function (err, clients) {
+                        if (err) {
                             socket.emit('seen', {
                                 from: data.to,
                                 to: socket.decoded_token.iss,
                                 id: id,
                                 status: 'nouser'
                             });
-                            logger.error('No user available in room \n');
+                            io.to(data.to).emit("message", data);
+                            logger.error('No user available in room', err);
                             SaveMessage(message);
+
+                        } else {
+                            if (Array.isArray(clients) && clients.length > 0) {
+
+
+                                data.status = 'delivered';
+                                data.id = id;
+                                io.to(data.to).emit("message", data);
+                                socket.emit('seen', {
+                                    from: data.to,
+                                    to: socket.decoded_token.iss,
+                                    id: id,
+                                    status: 'delivered'
+                                });
+                                message.status = 'delivered';
+
+                                SaveMessage(message);
+
+                            } else {
+
+                                socket.emit('seen', {
+                                    from: data.to,
+                                    to: socket.decoded_token.iss,
+                                    id: id,
+                                    status: 'nouser'
+                                });
+                                logger.error('No user available in room \n');
+                                SaveMessage(message);
+                            }
                         }
+                    });
+                }
+
+                redisClient.hget(bot_usr_redis_id, data.sessionId, function (err, obj) {
+                    if (obj) {
+                        var session_data = JSON.parse(obj);
+                        if (session_data.communication_type === "http") {
+                            var service_url = util.format("http://%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiversion, data.jti);
+                            if (validator.isIP(config.Services.ipmessagingapiurl)) {
+                                service_url = util.format("http://%s:%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiport, config.Services.ipmessagingapiversion, data.jti);
+                            }
+                            var post_data = {event_name: "message", message: message};
+                            var postdetails = Object.assign({}, post_data, data);
+                            Common.http_post(service_url, postdetails, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company));
+                            SaveMessage(message);
+                        } else {
+                            message_using_io(message);
+                        }
+                    } else {
+                        message_using_io(message);
                     }
                 });
-
             }
 
         });
@@ -461,8 +581,7 @@ io.sockets.on('connection',
                     .populate("userref", "username name avatar firstname lastname")
                     .exec(function (err, userAccount) {
                         if (err) {
-
-
+                            console.error(err);
                         } else {
 
                             var user = userAccount.userref;
@@ -480,8 +599,11 @@ io.sockets.on('connection',
                                     agentData.client = data.profile;
                                 }
 
-                                io.to(data.to).emit("agent", agentData);
                                 var client_data = socket.decoded_token;
+
+                                //io.to(data.to).emit("agent", agentData);
+                                io_emit_message("agent", "to", data, agentData);
+
                                 //socket.clientjti = data.to;
                                 ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Connected', '', '', 'inbound');
 
@@ -493,7 +615,7 @@ io.sockets.on('connection',
                                 data.agentdata = agentData;
                                 var jsonData = JSON.stringify(data);
 
-                                send_welcome_message(data.to,client_data.tenant, client_data.company);
+                                send_welcome_message(data, client_data.tenant, client_data.company);
 
                                 redisClient.set(onlineClientsUsers, jsonData, function (clientUserSet) {
 
@@ -597,12 +719,11 @@ io.sockets.on('connection',
         });
 
         socket.on('reject', function (data) {
-
             if (data && data.to) {
                 var client_data = socket.decoded_token;
-                io.to(data.to).emit("agent_rejected", client_data);
+                //io.to(data.to).emit("agent_rejected", client_data);
+                io_emit_message("agent_rejected", "to", data, client_data);
             }
-
         });
 
         socket.on('ticket', function (data) {
@@ -615,7 +736,9 @@ io.sockets.on('connection',
 
             if (data && data.to) {
                 var client_data = socket.decoded_token;
-                io.to(data.to).emit("left", client_data);
+                //io.to(data.to).emit("left", client_data);
+                data.sessionId = data.data ? data.data.sessionId : "";
+                io_emit_message("left", "to", data, client_data);
 
                 var message = PersonalMessage({
 
@@ -673,7 +796,8 @@ io.sockets.on('connection',
 
             if (data && data.to) {
                 data.from = socket.decoded_token.iss;
-                io.to(data.to).emit("typing", data);
+                //io.to(data.to).emit("typing", data);
+                io_emit_message("typing", "to", data, socket.decoded_token);
             }
 
         });
@@ -682,7 +806,8 @@ io.sockets.on('connection',
 
             if (data && data.to) {
                 data.from = socket.decoded_token.iss;
-                io.to(data.to).emit("typingstoped", data);
+                //io.to(data.to).emit("typingstoped", data);
+                io_emit_message("typingstoped", "to", data, socket.decoded_token);
             }
 
         });
@@ -984,7 +1109,8 @@ io.sockets.on('connection',
             if (data && data.to && data.id) {
                 data.from = socket.decoded_token.iss;
                 data.status = 'seen';
-                io.to(data.to).emit("seen", data);
+                //io.to(data.to).emit("seen", data);
+                io_emit_message("seen", "to", data, socket.decoded_token);
                 UpdateRead(data.id);
             }
         });

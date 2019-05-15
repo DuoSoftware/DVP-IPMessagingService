@@ -227,5 +227,34 @@ module.exports.DecryptMessages = function (messages) {
     }
 };
 
+module.exports.http_post = function (serviceUrl,postData,companyInfo) {
 
+    var jsonStr = JSON.stringify(postData);
+//    var accessToken = util.format("bearer %s", config.Host.token);
+    console.log('HTTP POST Request:: %s', serviceUrl);
+    var options = {
+        url: serviceUrl,
+        method: 'POST',
+        headers: {
+            'content-type': 'application/json',
+            'authorization': token,
+            'companyinfo': companyInfo
+        },
+        body: jsonStr
+    };
+
+    return   request.post(options, function optionalCallback(err, httpResponse, body) {
+        if (err) {
+            console.log('upload failed:', err);
+            return null;
+        }
+        else if(httpResponse.statusCode === 200){
+            return body;
+        }
+        else {
+            return null;
+        }
+    });
+
+};
 

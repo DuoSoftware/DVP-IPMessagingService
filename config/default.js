@@ -45,6 +45,7 @@ module.exports = {
 
     "Host":
         {
+            "botclientusers":"ip_api_bot_online_users",
             "vdomain": "localhost",
             "domain": "localhost",
             "internalport": "8889",
@@ -64,10 +65,13 @@ module.exports = {
         "interactionurl": "interactions.app.veery.cloud",//interactions.app.veery.cloud
         "interactionport": '3637',
         "interactionversion":"1.0.0.0",
+
         "ardsliteservice": "ardsliteservice.app.veery.cloud",//ardsliteservice.app.veery.cloud
         "ardsliteport": "8828",
-        "ardsliteversion": "1.0.0.0"
+        "ardsliteversion": "1.0.0.0",
 
-
+        "ipmessagingapiurl": "127.0.0.1",//ardsliteservice.app.veery.cloud
+        "ipmessagingapiport": "3000",
+        "ipmessagingapiversion": "1.0.0.0"
     }
 };
