@@ -209,9 +209,9 @@ var io_emit_message = function (event_name, io_in_o_io_to, data, post_data) {
                     if (validator.isIP(config.Services.ipmessagingapiurl)) {
                         service_url = util.format("http://%s:%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiport, config.Services.ipmessagingapiversion, data.jti);
                     }
-                    post_data.event_name = event_name;
-                    var postdetails = Object.assign({}, post_data, data);
-                    Common.http_post(service_url, postdetails, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company))
+
+                    post_data.body = data;
+                    Common.http_post(service_url, post_data, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company))
                 } else {
                     if (io_in_o_io_to === "to") {
                         io.to(data.to).emit(event_name, post_data);
@@ -308,7 +308,7 @@ var send_welcome_message = function (data, tenant, company) {
                     message: pConfig.welcomeMessage
                 };
                 //io.in(to).emit("message", msg);
-                io_emit_message("message", "in", data, msg);
+                io_emit_message("message", "in", data, {message:msg});
 
                 var message = PersonalMessage({
 
@@ -516,9 +516,8 @@ io.sockets.on('connection',
                             if (validator.isIP(config.Services.ipmessagingapiurl)) {
                                 service_url = util.format("http://%s:%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiport, config.Services.ipmessagingapiversion, data.jti);
                             }
-                            var post_data = {event_name: "message", message: message};
-                            var postdetails = Object.assign({}, post_data, data);
-                            Common.http_post(service_url, postdetails, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company));
+                            var post_data = {event_name: "message", message: message,body:data};
+                            Common.http_post(service_url, post_data, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company));
                             SaveMessage(message);
                         } else {
                             message_using_io(message);
@@ -602,7 +601,7 @@ io.sockets.on('connection',
                                 var client_data = socket.decoded_token;
 
                                 //io.to(data.to).emit("agent", agentData);
-                                io_emit_message("agent", "to", data, agentData);
+                                io_emit_message("agent", "to", data, {agent:agentData});
 
                                 //socket.clientjti = data.to;
                                 ards.UpdateResource(client_data.tenant, client_data.company, data.to, client_data.context.resourceid, 'Connected', '', '', 'inbound');
@@ -722,7 +721,7 @@ io.sockets.on('connection',
             if (data && data.to) {
                 var client_data = socket.decoded_token;
                 //io.to(data.to).emit("agent_rejected", client_data);
-                io_emit_message("agent_rejected", "to", data, client_data);
+                io_emit_message("agent_rejected", "to", data, {agent_rejected:client_data});
             }
         });
 
@@ -738,7 +737,7 @@ io.sockets.on('connection',
                 var client_data = socket.decoded_token;
                 //io.to(data.to).emit("left", client_data);
                 data.sessionId = data.data ? data.data.sessionId : "";
-                io_emit_message("left", "to", data, client_data);
+                io_emit_message("sessionend", "to", data, {sessionend:{}});
 
                 var message = PersonalMessage({
 
@@ -797,7 +796,7 @@ io.sockets.on('connection',
             if (data && data.to) {
                 data.from = socket.decoded_token.iss;
                 //io.to(data.to).emit("typing", data);
-                io_emit_message("typing", "to", data, socket.decoded_token);
+                io_emit_message("typing", "to", data, {typing:socket.decoded_token});
             }
 
         });
@@ -807,7 +806,7 @@ io.sockets.on('connection',
             if (data && data.to) {
                 data.from = socket.decoded_token.iss;
                 //io.to(data.to).emit("typingstoped", data);
-                io_emit_message("typingstoped", "to", data, socket.decoded_token);
+                io_emit_message("typingstoped", "to", data, {typingstoped:socket.decoded_token});
             }
 
         });
@@ -1110,7 +1109,7 @@ io.sockets.on('connection',
                 data.from = socket.decoded_token.iss;
                 data.status = 'seen';
                 //io.to(data.to).emit("seen", data);
-                io_emit_message("seen", "to", data, socket.decoded_token);
+                io_emit_message("seen", "to", data, {seen:socket.decoded_token});
                 UpdateRead(data.id);
             }
         });
