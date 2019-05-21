@@ -290,7 +290,7 @@ io.sockets.on('connection', socketioJwt.authorize({
                         status: 'pending',
                         uuid: id,
                         data: data.message,
-                        session: socket.decoded_token.session_id || socket.decoded_token.jti,
+                        session: socket.decoded_token.sessionId || socket.decoded_token.jti,
                         from: socket.decoded_token.name || socket.decoded_token.jti,
                         to: data.to
 
@@ -462,7 +462,7 @@ io.sockets.on('connection', socketioJwt.authorize({
                         status: 'pending',
                         uuid: id,
                         data: item.message,
-                        session: socket.decoded_token.session_id || socket.decoded_token.jti,
+                        session: socket.decoded_token.sessionId || socket.decoded_token.jti,
                         from: socket.decoded_token.name || socket.decoded_token.jti,
                         to: item.to
 

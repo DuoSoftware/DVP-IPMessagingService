@@ -116,8 +116,11 @@ module.exports.CompanyChatSecret = function (req, payload, done) {
         //payload.session = payload.jti;
         var chatKey = util.format('%d:%d:keys:chat:public', payload.tenant, payload.company);
 
+        console.log(chatKey);
+
         redisClient.get(chatKey, function (err, key) {
 
+            console.log(key);
             if (err) {
                 return done(err);
             }
