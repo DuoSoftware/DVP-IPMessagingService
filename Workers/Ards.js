@@ -184,6 +184,39 @@ var RemoveArdsRequest = function (tenant, company, sessionId, reason, callback) 
     }
 };
 
+var RemoveArdsRequest = function (tenant, company, sessionId, reason, callback) {
+
+    try {
+        var ardsReqServerUrl = util.format("http://%s/DVP/API/%s/ARDS/request/%s/%s", config.Services.ardsliteservice, config.Services.ardsliteversion, sessionId, reason);
+        if (validator.isIP(config.Services.ardsliteservice)) {
+            ardsReqServerUrl = util.format("http://%s:%s/DVP/API/%s/ARDS/request/%s/%s", config.Services.ardsliteservice, config.Services.ardsliteport, config.Services.ardsliteversion, sessionId, reason);
+        }
+        var companyInfo = util.format("%d:%d", tenant, company);
+        httpDelete(companyInfo, ardsReqServerUrl, function (err, res1, result) {
+            if(err){
+                logger.error("DVP-IPMessagingAPI.RemoveArdsRequest:: Error::"+ err);
+                callback(err, undefined);
+            }else{
+                if(res1.statusCode === 200) {
+                    logger.info("DVP-IPMessagingAPI.RemoveArdsRequest:: Success");
+                    if(result && result !== "No matching resources at the moment") {
+                        callback(undefined, JSON.parse(result));
+                    }else{
+                        callback(undefined, undefined);
+                    }
+                }else{
+                    logger.info("DVP-IPMessagingAPI.RemoveArdsRequest:: Failed");
+                    callback(undefined, undefined);
+                }
+            }
+        });
+    }catch(ex){
+        logger.error("DVP-IPMessagingAPI.RemoveArdsRequest:: Exception::"+ ex);
+        callback(ex, undefined);
+    }
+};
+
+
 var PickResource = function (tenant, company, sessionId, attributes, priority, resourceCount, otherInfo, callback) {
 
     var reqBody = {
@@ -359,3 +392,4 @@ module.exports.RegisterChatArdsClient = RegisterChatArdsClient;
 module.exports.PickResource = PickResource;
 module.exports.UpdateResource = UpdateResource;
 module.exports.GetOngoingSessions = GetOngoingSessions;
+module.exports.RemoveArdsRequest = RemoveArdsRequest;

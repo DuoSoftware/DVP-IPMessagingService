@@ -212,6 +212,13 @@ var io_emit_message = function (event_name, io_in_o_io_to, data, post_data) {
 
                     post_data.body = data;
                     Common.http_post(service_url, post_data, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company))
+                    if(event_name==="accept"){
+                        ards.RemoveArdsRequest(data.tenant, data.company, data.sessionId, 'NONE',function (err,res) {
+
+                            jsonString = messageFormatter.FormatMessage(err, "accept chat - RemoveArdsRequest", true, res);
+                            logger.info('accept -RemoveArdsRequest - : %s ', jsonString);
+                        });
+                    }
                 } else {
                     if (io_in_o_io_to === "to") {
                         io.to(data.to).emit(event_name, post_data);
@@ -590,7 +597,8 @@ io.sockets.on('connection',
                                     username: user.username,
                                     name: user.firstname + "" + user.lastname,
                                     id: user.id,
-                                    avatar: user.avatar
+                                    avatar: user.avatar,
+                                    tenant:client_data.tenant, company:client_data.company
                                 };
 
                                 if (data.profile) {
@@ -601,6 +609,8 @@ io.sockets.on('connection',
                                 var client_data = socket.decoded_token;
 
                                 //io.to(data.to).emit("agent", agentData);
+                                data.company = socket.decoded_token.company;
+                                data.tenant =socket.decoded_token.tenant;
                                 io_emit_message("agent", "to", data, {agent:agentData});
 
                                 //socket.clientjti = data.to;
