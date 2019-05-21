@@ -324,6 +324,7 @@ var send_welcome_message = function (data, tenant, company) {
                     updated_at: msg.time,
                     status: 'delivered',
                     uuid: msg.id,
+                    session: data.sessionId,
                     data: msg.message,
                     from: msg.from,
                     to: msg.to
@@ -465,6 +466,7 @@ io.sockets.on('connection',
                     status: 'pending',
                     uuid: id,
                     data: data.message,
+                    session: data.sessionId,
                     from: socket.decoded_token.iss,
                     to: data.to
 
@@ -655,6 +657,7 @@ io.sockets.on('connection',
                                                 uuid: id,
                                                 data: msg.message,
                                                 from: data.jti,
+                                                session: data.sessionId,
                                                 to: socket.decoded_token.iss,
                                                 who: 'client'
 
@@ -757,6 +760,7 @@ io.sockets.on('connection',
                     status: 'delivered',
                     uuid: uuid.v4(),
                     data: data.message,
+                    session: data.sessionId,
                     from: socket.decoded_token.iss,
                     to: data.to
 
@@ -786,6 +790,7 @@ io.sockets.on('connection',
                     status: 'delivered',
                     uuid: uuid.v4(),
                     data: data.message,
+                    session: data.sessionId,
                     from: socket.decoded_token.iss,
                     to: data.to
 
