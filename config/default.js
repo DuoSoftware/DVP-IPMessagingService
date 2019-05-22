@@ -70,7 +70,7 @@ module.exports = {
         "ardsliteport": "8828",
         "ardsliteversion": "1.0.0.0",
 
-        "ipmessagingapiurl": "127.0.0.1",//ardsliteservice.app.veery.cloud
+        "ipmessagingapiurl": "ad6f1324.ngrok.io",//ardsliteservice.app.veery.cloud
         "ipmessagingapiport": "3000",
         "ipmessagingapiversion": "1.0.0.0"
     }
