@@ -222,7 +222,8 @@ var io_emit_message = function (event_name, io_in_o_io_to, data, post_data) {
                             });
                             break;
                         case "agent_rejected":
-                            ards.RemoveArdsRequest(data.tenant, data.company, data.sessionId, 'NONE',function (err,res) {
+                            var info = post_data[event_name];
+                            ards.RemoveArdsRequest(info.tenant, info.company, data.sessionId, 'NONE',function (err,res) {
                                 var jsonString = messageFormatter.FormatMessage(err, "accept chat - RemoveArdsRequest", true, res);
                                 logger.info('accept -RemoveArdsRequest - : %s ', jsonString);
                             });
