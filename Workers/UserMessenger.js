@@ -237,7 +237,9 @@ var io_emit_message = function (event_name, io_in_o_io_to, data, post_data) {
                     }
 
                     post_data.body = data;
-                    Common.http_post(service_url, post_data, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company))
+                    post_data.event_name = event_name;
+
+                    Common.http_post(service_url, post_data, util.format("%d:%d", session_data.client_data.tenant, session_data.client_data.company));
 
                     switch (event_name) {
                         case "agent":
@@ -787,7 +789,7 @@ io.sockets.on('connection',
                 var client_data = socket.decoded_token;
                 //io.to(data.to).emit("left", client_data);
                 data.sessionId = data.data ? data.data.sessionId : "";
-                io_emit_message("sessionend", "to", data, {sessionend: {}});
+                io_emit_message("sessionend", "to", data, {sessionend: {sessionend:"sessionend"}});
 
                 var message = PersonalMessage({
 
