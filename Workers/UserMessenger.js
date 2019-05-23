@@ -204,17 +204,17 @@ function set_chat_session(tenant, company, session_id, reason, agent_data) {
         ards.RemoveArdsRequest(tenant, company, session_id, 'NONE', function (err, res) {
 
             jsonString = messageFormatter.FormatMessage(err, "accept chat - RemoveArdsRequest", true, res);
-            logger.info('accept -set_chat_session - : %s ', jsonString);
+            logger.info('accept - set_chat_session - : %s ', jsonString);
         });
 
         var key = "api-" + session_id;
         redisClient.set(key, JSON.stringify(agent_data), function (err, obj) {
             if (err) {
-                jsonString = messageFormatter.FormatMessage(undefined, "agent_found - fail to set assigned agent", false, undefined);
+                jsonString = messageFormatter.FormatMessage(undefined, "set_chat_session - fail to set assigned agent", false, undefined);
                 logger.error('set_chat_session : %s ', jsonString);
             } else {
-                jsonString = messageFormatter.FormatMessage(undefined, "agent_found - fail to set assigned agent", true, obj);
-                logger.error('set_chat_session : %s ', jsonString);
+                jsonString = messageFormatter.FormatMessage(undefined, "set_chat_session - set assigned agent", true, obj);
+                logger.info('set_chat_session : %s ', jsonString);
             }
         })
     } catch (ex) {
