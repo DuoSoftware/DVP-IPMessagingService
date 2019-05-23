@@ -197,6 +197,32 @@ var UpdateRead = function (uuid) {
     });
 };
 
+function set_chat_session(tenant, company, session_id, reason, agent_data) {
+    try {
+
+        var jsonString;
+        ards.RemoveArdsRequest(tenant, company, session_id, 'NONE', function (err, res) {
+
+            jsonString = messageFormatter.FormatMessage(err, "accept chat - RemoveArdsRequest", true, res);
+            logger.info('accept -set_chat_session - : %s ', jsonString);
+        });
+
+        var key = "api-" + session_id;
+        redisClient.set(key, JSON.stringify(agent_data), function (err, obj) {
+            if (err) {
+                jsonString = messageFormatter.FormatMessage(undefined, "agent_found - fail to set assigned agent", false, undefined);
+                logger.error('set_chat_session : %s ', jsonString);
+            } else {
+                jsonString = messageFormatter.FormatMessage(undefined, "agent_found - fail to set assigned agent", true, obj);
+                logger.error('set_chat_session : %s ', jsonString);
+            }
+        })
+    } catch (ex) {
+        var jsonString = messageFormatter.FormatMessage(ex, "EXCEPTION", false, undefined);
+        logger.error('set_chat_session - Exception occurred : %s ', jsonString);
+    }
+}
+
 var io_emit_message = function (event_name, io_in_o_io_to, data, post_data) {
 
     try {
@@ -215,15 +241,16 @@ var io_emit_message = function (event_name, io_in_o_io_to, data, post_data) {
 
                     switch (event_name) {
                         case "agent":
-                            ards.RemoveArdsRequest(data.tenant, data.company, data.sessionId, 'NONE', function (err, res) {
+                            set_chat_session(data.tenant, data.company, data.sessionId, 'NONE',data);
+                            /*ards.RemoveArdsRequest(data.tenant, data.company, data.sessionId, 'NONE', function (err, res) {
 
                                 jsonString = messageFormatter.FormatMessage(err, "accept chat - RemoveArdsRequest", true, res);
                                 logger.info('accept -RemoveArdsRequest - : %s ', jsonString);
-                            });
+                            });*/
                             break;
                         case "agent_rejected":
                             var info = post_data[event_name];
-                            ards.RemoveArdsRequest(info.tenant, info.company, data.sessionId, 'NONE',function (err,res) {
+                            ards.RemoveArdsRequest(info.tenant, info.company, data.sessionId, 'AgentRejected', function (err, res) {
                                 var jsonString = messageFormatter.FormatMessage(err, "accept chat - RemoveArdsRequest", true, res);
                                 logger.info('accept -RemoveArdsRequest - : %s ', jsonString);
                             });
