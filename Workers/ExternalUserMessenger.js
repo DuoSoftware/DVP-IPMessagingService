@@ -231,7 +231,7 @@ io.sockets.on('connection', socketioJwt.authorize({
 
                         client_data.profile = profile;
                         socket.profile = profile;
-
+                        client_data.Skills=resource.Skills;
                         io.in(agent).emit("client", client_data);
 
                     } else {
