@@ -31,7 +31,7 @@ module.exports = {
     "Security":
         {
 
-            "ip" : "45.55.142.207",
+            "ip" : "138.197.90.92",
             "port": 6389,
             "user": "duo",
             "password": "DuoS123",

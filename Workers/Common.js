@@ -156,6 +156,9 @@ module.exports.CreateEngagement = function (payload, cb) {
         if (payload.session_id)
             engagementData.engagement_id = payload.session_id;
 
+        if (payload.sessionId)
+            engagementData.engagement_id = payload.sessionId;
+
 
         if (payload.channel) {
             engagementData.channel = payload.channel;
@@ -168,6 +171,10 @@ module.exports.CreateEngagement = function (payload, cb) {
 
         if (payload.contact) {
             engagementData.raw = payload.contact;
+        }
+
+        if (payload.aud) {
+            engagementData.channel_to = payload.aud;
         }
 
         logger.debug("Calling Engagement service URL %s", engagementURL);

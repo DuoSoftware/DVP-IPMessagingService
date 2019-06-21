@@ -26,7 +26,7 @@
     "redis": "^2.6.3",
     "request": "^2.79.0",
     "restify": "^4.3.0",
-    "socket.io": "^2.0.3",
+    "socket.io": "^2.2.0",
     "socket.io-ioredis": "^1.4.1",
     "socket.io-redis": "^5.1.0",
     "socketio-jwt": "^4.5.0",

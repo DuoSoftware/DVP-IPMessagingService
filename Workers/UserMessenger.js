@@ -282,6 +282,7 @@ var io_emit_message = function (event_name, io_in_o_io_to, data, post_data) {
             }
             logger.info(jsonString);
         });
+
     } catch (ex) {
         logger.error('io_emit_message', ex);
     }
