@@ -21,7 +21,7 @@
     "dvp-common": "^0.8.4",
     "dvp-mongomodels": "^4.8.10",
     "ioredis": "^3.1.1",
-    "mongoose": "^4.7.6",
+    "mongoose": "^5.7.7",
     "node-uuid": "^1.4.7",
     "redis": "^2.6.3",
     "request": "^2.79.0",
