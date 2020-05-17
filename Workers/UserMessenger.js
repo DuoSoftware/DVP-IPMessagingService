@@ -232,7 +232,7 @@ var io_emit_message = function (event_name, io_in_o_io_to, data, post_data) {
                 var session_data = JSON.parse(obj);
                 if (session_data.communication_type === "http") {
                     var service_url = util.format("http://%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiversion, data.jti);
-                    if (validator.isIP(config.Services.ipmessagingapiurl)) {
+                    if (config.Services.dynamicPort || validator.isIP(config.Services.ipmessagingapiurl)) {
                         service_url = util.format("http://%s:%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiport, config.Services.ipmessagingapiversion, data.jti);
                     }
 
@@ -307,7 +307,7 @@ var socket_emit_message = function (event_name, post_data) {
                 var session_data = JSON.parse(obj);
                 if (session_data.communication_type === "http") {
                     var service_url = util.format("http://%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiversion, data.jti);
-                    if (validator.isIP(config.Services.ipmessagingapiurl)) {
+                    if (config.Services.dynamicPort || validator.isIP(config.Services.ipmessagingapiurl)) {
                         service_url = util.format("http://%s:%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiport, config.Services.ipmessagingapiversion, data.jti);
                     }
                     post_data.event_name = event_name;
@@ -562,7 +562,7 @@ io.sockets.on('connection',
                         var session_data = JSON.parse(obj);
                         if (session_data.communication_type === "http") {
                             var service_url = util.format("http://%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiversion, data.jti);
-                            if (validator.isIP(config.Services.ipmessagingapiurl)) {
+                            if (config.Services.dynamicPort || validator.isIP(config.Services.ipmessagingapiurl)) {
                                 service_url = util.format("http://%s:%s/DVP/API/%s/IPMessengerAPI/Massage/%s", config.Services.ipmessagingapiurl, config.Services.ipmessagingapiport, config.Services.ipmessagingapiversion, data.jti);
                             }
                             var post_data = {event_name: "message", message: message, body: data};

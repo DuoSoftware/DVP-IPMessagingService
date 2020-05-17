@@ -142,7 +142,7 @@ module.exports.CreateEngagement = function (payload, cb) {
 
 
         var engagementURL = util.format("http://%s/DVP/API/%s/EngagementSessionForProfile", config.Services.interactionurl, config.Services.interactionversion);
-        if (validator.isIP(config.Services.interactionurl))
+        if (config.Services.dynamicPort || validator.isIP(config.Services.interactionurl))
             engagementURL = util.format("http://%s:%d/DVP/API/%s/EngagementSessionForProfile", config.Services.interactionurl, config.Services.interactionport, config.Services.interactionversion);
 
         var engagementData = {

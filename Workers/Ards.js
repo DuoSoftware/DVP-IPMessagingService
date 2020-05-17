@@ -132,7 +132,7 @@ var RegisterChatArdsClient = function(){
 
     try {
         var ardsReqServerUrl = util.format("http://%s/DVP/API/%s/ARDS/requestserver", config.Services.ardsliteservice, config.Services.ardsliteversion);
-        if (validator.isIP(config.Services.ardsliteservice)) {
+        if (config.Services.dynamicPort || validator.isIP(config.Services.ardsliteservice)) {
             ardsReqServerUrl = util.format("http://%s:%s/DVP/API/%s/ARDS/requestserver", config.Services.ardsliteservice, config.Services.ardsliteport, config.Services.ardsliteversion);
         }
         var companyInfo = util.format("%d:%d", -1, -1);
@@ -156,7 +156,7 @@ var RemoveArdsRequest = function (tenant, company, sessionId, reason, callback) 
 
     try {
         var ardsReqServerUrl = util.format("http://%s/DVP/API/%s/ARDS/request/%s/%s", config.Services.ardsliteservice, config.Services.ardsliteversion, sessionId, reason);
-        if (validator.isIP(config.Services.ardsliteservice)) {
+        if (config.Services.dynamicPort || validator.isIP(config.Services.ardsliteservice)) {
             ardsReqServerUrl = util.format("http://%s:%s/DVP/API/%s/ARDS/request/%s/%s", config.Services.ardsliteservice, config.Services.ardsliteport, config.Services.ardsliteversion, sessionId, reason);
         }
         var companyInfo = util.format("%d:%d", tenant, company);
@@ -188,7 +188,7 @@ var RemoveArdsRequest = function (tenant, company, sessionId, reason, callback) 
 
     try {
         var ardsReqServerUrl = util.format("http://%s/DVP/API/%s/ARDS/request/%s/%s", config.Services.ardsliteservice, config.Services.ardsliteversion, sessionId, reason);
-        if (validator.isIP(config.Services.ardsliteservice)) {
+        if (config.Services.dynamicPort || validator.isIP(config.Services.ardsliteservice)) {
             ardsReqServerUrl = util.format("http://%s:%s/DVP/API/%s/ARDS/request/%s/%s", config.Services.ardsliteservice, config.Services.ardsliteport, config.Services.ardsliteversion, sessionId, reason);
         }
         var companyInfo = util.format("%d:%d", tenant, company);
@@ -233,7 +233,7 @@ var PickResource = function (tenant, company, sessionId, attributes, priority, r
 
     try {
         var ardsReqServerUrl = util.format("http://%s/DVP/API/%s/ARDS/request", config.Services.ardsliteservice, config.Services.ardsliteversion);
-        if (validator.isIP(config.Services.ardsliteservice)) {
+        if (config.Services.dynamicPort || validator.isIP(config.Services.ardsliteservice)) {
             ardsReqServerUrl = util.format("http://%s:%s/DVP/API/%s/ARDS/request", config.Services.ardsliteservice, config.Services.ardsliteport, config.Services.ardsliteversion);
         }
         var companyInfo = util.format("%d:%d", tenant, company);
@@ -278,7 +278,7 @@ var UpdateResource = function(tenant, company, sessionId, resourceId, state, oth
 
                 var httpUrl = util.format('http://%s/DVP/API/%s/ARDS/resource/%s/concurrencyslot/session/%s?direction=%s', ardsIp, ardsVersion, resourceId, sessionId, direction);
 
-                if(validator.isIP(ardsIp)) {
+                if(config.Services.dynamicPort || validator.isIP(ardsIp)) {
                     httpUrl = util.format('http://%s:%d/DVP/API/%s/ARDS/resource/%s/concurrencyslot/session/%s?direction=%s', ardsIp, ardsPort, ardsVersion, resourceId, sessionId, direction);
                 }
 
@@ -325,7 +325,7 @@ var GetOngoingSessions = function (tenant, company, resourceId, callback) {
     try {
 
         var ardsResourceUrl = util.format("http://%s/DVP/API/%s/ARDS/resource/%s", config.Services.ardsliteservice, config.Services.ardsliteversion, resourceId);
-        if (validator.isIP(config.Services.ardsliteservice)) {
+        if (config.Services.dynamicPort || validator.isIP(config.Services.ardsliteservice)) {
             ardsResourceUrl = util.format("http://%s:%s/DVP/API/%s/ARDS/resource/%s", config.Services.ardsliteservice, config.Services.ardsliteport, config.Services.ardsliteversion, resourceId);
         }
 
