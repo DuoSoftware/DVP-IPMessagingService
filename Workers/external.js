@@ -10,7 +10,7 @@
 
 var jwt = require('jsonwebtoken');
 var socket = require('socket.io-client')('http://localhost:3334');
-var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
+var logger = require('dvp-common-lite/LogHandler/CommonLogHandler.js').logger;
 var uuid = require('node-uuid');
 var fs = require('fs')
 

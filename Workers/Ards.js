@@ -6,7 +6,7 @@ var request = require('request');
 var util = require('util');
 var config = require('config');
 var validator = require('validator');
-var logger = require('dvp-common/LogHandler/CommonLogHandler.js').logger;
+var logger = require('dvp-common-lite/LogHandler/CommonLogHandler.js').logger;
 
 
 
