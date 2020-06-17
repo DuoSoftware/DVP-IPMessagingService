@@ -73,6 +73,6 @@ module.exports = {
         "ipmessagingapiurl": "104.236.197.119",//ardsliteservice.app.veery.cloud
         "ipmessagingapiport": "3000",
         "ipmessagingapiversion": "1.0.0.0",
-        "dynamicPort": false
+        "dynamicPort": true
     }
 };
