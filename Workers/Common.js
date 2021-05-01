@@ -226,6 +226,7 @@ module.exports.CreateEngagement = function (payload, cb) {
 module.exports.DecryptMessages = function (messages) {
   try {
     return messages.map(function (item) {
+      if(item.data)
       item.data = crypto_handler.Decrypt(item.data);
       return item;
     });
