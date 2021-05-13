@@ -131,7 +131,10 @@ var RegisterChatArdsClient = function () {
       config.Services.ardsliteservice,
       config.Services.ardsliteversion
     );
-    if (validator.isIP(config.Services.ardsliteservice)) {
+    if (
+      config.Services.dynamicPort ||
+      validator.isIP(config.Services.ardsliteservice)
+    ) {
       ardsReqServerUrl = util.format(
         "http://%s:%s/DVP/API/%s/ARDS/requestserver",
         config.Services.ardsliteservice,
@@ -140,25 +143,28 @@ var RegisterChatArdsClient = function () {
       );
     }
     var companyInfo = util.format("%d:%d", -1, -1);
-    httpPost(companyInfo, ardsReqServerUrl, reqBody, function (
-      err,
-      res1,
-      result
-    ) {
-      if (err) {
-        logger.error(
-          "DVP-IPMessagingService.RegisterChatArdsClient:: Error::" + err
-        );
-      } else {
-        if (res1.statusCode === 200) {
-          logger.info(
-            "DVP-IPMessagingService.RegisterChatArdsClient:: Success"
+    httpPost(
+      companyInfo,
+      ardsReqServerUrl,
+      reqBody,
+      function (err, res1, result) {
+        if (err) {
+          logger.error(
+            "DVP-IPMessagingService.RegisterChatArdsClient:: Error::" + err
           );
         } else {
-          logger.info("DVP-IPMessagingService.RegisterChatArdsClient:: Failed");
+          if (res1.statusCode === 200) {
+            logger.info(
+              "DVP-IPMessagingService.RegisterChatArdsClient:: Success"
+            );
+          } else {
+            logger.info(
+              "DVP-IPMessagingService.RegisterChatArdsClient:: Failed"
+            );
+          }
         }
       }
-    });
+    );
   } catch (ex) {
     logger.error(
       "DVP-IPMessagingService.RegisterChatArdsClient:: Exception::" + ex
@@ -181,7 +187,10 @@ var RemoveArdsRequest = function (
       sessionId,
       reason
     );
-    if (validator.isIP(config.Services.ardsliteservice)) {
+    if (
+      config.Services.dynamicPort ||
+      validator.isIP(config.Services.ardsliteservice)
+    ) {
       ardsReqServerUrl = util.format(
         "http://%s:%s/DVP/API/%s/ARDS/request/%s/%s",
         config.Services.ardsliteservice,
@@ -233,7 +242,10 @@ var RemoveArdsRequest = function (
       sessionId,
       reason
     );
-    if (validator.isIP(config.Services.ardsliteservice)) {
+    if (
+      config.Services.dynamicPort ||
+      validator.isIP(config.Services.ardsliteservice)
+    ) {
       ardsReqServerUrl = util.format(
         "http://%s:%s/DVP/API/%s/ARDS/request/%s/%s",
         config.Services.ardsliteservice,
@@ -295,7 +307,10 @@ var PickResource = function (
       config.Services.ardsliteservice,
       config.Services.ardsliteversion
     );
-    if (validator.isIP(config.Services.ardsliteservice)) {
+    if (
+      config.Services.dynamicPort ||
+      validator.isIP(config.Services.ardsliteservice)
+    ) {
       ardsReqServerUrl = util.format(
         "http://%s:%s/DVP/API/%s/ARDS/request",
         config.Services.ardsliteservice,
@@ -304,27 +319,28 @@ var PickResource = function (
       );
     }
     var companyInfo = util.format("%d:%d", tenant, company);
-    httpPost(companyInfo, ardsReqServerUrl, reqBody, function (
-      err,
-      res1,
-      result
-    ) {
-      if (err) {
-        logger.error("DVP-IPMessagingService.PickResource:: Error::" + err);
-        callback(err, undefined);
-      } else {
-        RemoveArdsRequest(tenant, company, sessionId, "NONE", function () {
-          if (res1.statusCode === 200) {
-            logger.info("DVP-IPMessagingService.PickResource:: Success");
-            var response = JSON.parse(result);
-            callback(undefined, response.Result);
-          } else {
-            logger.info("DVP-IPMessagingService.PickResource:: Failed");
-            callback(undefined, undefined);
-          }
-        });
+    httpPost(
+      companyInfo,
+      ardsReqServerUrl,
+      reqBody,
+      function (err, res1, result) {
+        if (err) {
+          logger.error("DVP-IPMessagingService.PickResource:: Error::" + err);
+          callback(err, undefined);
+        } else {
+          RemoveArdsRequest(tenant, company, sessionId, "NONE", function () {
+            if (res1.statusCode === 200) {
+              logger.info("DVP-IPMessagingService.PickResource:: Success");
+              var response = JSON.parse(result);
+              callback(undefined, response.Result);
+            } else {
+              logger.info("DVP-IPMessagingService.PickResource:: Failed");
+              callback(undefined, undefined);
+            }
+          });
+        }
       }
-    });
+    );
   } catch (ex) {
     logger.error("DVP-IPMessagingService.PickResource:: Exception::" + ex);
     callback(ex, undefined);
@@ -363,7 +379,7 @@ var UpdateResource = function (
           direction
         );
 
-        if (validator.isIP(ardsIp)) {
+        if (config.Services.dynamicPort || validator.isIP(ardsIp)) {
           httpUrl = util.format(
             "http://%s:%d/DVP/API/%s/ARDS/resource/%s/concurrencyslot/session/%s?direction=%s",
             ardsIp,
@@ -430,7 +446,10 @@ var GetOngoingSessions = function (tenant, company, resourceId, callback) {
       config.Services.ardsliteversion,
       resourceId
     );
-    if (validator.isIP(config.Services.ardsliteservice)) {
+    if (
+      config.Services.dynamicPort ||
+      validator.isIP(config.Services.ardsliteservice)
+    ) {
       ardsResourceUrl = util.format(
         "http://%s:%s/DVP/API/%s/ARDS/resource/%s",
         config.Services.ardsliteservice,
