@@ -1,10 +1,11 @@
 module.exports = {
   Mongo: {
-    ip: "104.236.231.11",
-    port: "27017",
+    ip: "facetone-prod.2xyao.mongodb.net",
+    port: "",
     dbname: "dvpdb",
-    password: "DuoS123",
-    user: "duo",
+    password: "Hds7236YD",
+    user: "facetone",
+    type: "mongodb+srv",
   },
 
   Redis: {
