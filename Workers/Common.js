@@ -19,6 +19,10 @@ var redisdb = config.Security.db;
 
 var crypto_handler = require("./crypto_handler.js");
 
+let encrypted = crypto_handler.Encrypt("HI 😄");
+let decrypted = crypto_handler.Decrypt(encrypted);
+console.log(decrypted);
+
 var redisSetting = {
   port: redisport,
   host: redisip,
@@ -226,8 +230,7 @@ module.exports.CreateEngagement = function (payload, cb) {
 module.exports.DecryptMessages = function (messages) {
   try {
     return messages.map(function (item) {
-      if(item.data)
-      item.data = crypto_handler.Decrypt(item.data);
+      if (item.data) item.data = crypto_handler.Decrypt(item.data);
       return item;
     });
   } catch (ex) {
@@ -251,18 +254,17 @@ module.exports.http_post = function (serviceUrl, postData, companyInfo) {
     body: jsonStr,
   };
 
-  return request.post(options, function optionalCallback(
-    err,
-    httpResponse,
-    body
-  ) {
-    if (err) {
-      console.log("upload failed:", err);
-      return null;
-    } else if (httpResponse.statusCode === 200) {
-      return body;
-    } else {
-      return null;
+  return request.post(
+    options,
+    function optionalCallback(err, httpResponse, body) {
+      if (err) {
+        console.log("upload failed:", err);
+        return null;
+      } else if (httpResponse.statusCode === 200) {
+        return body;
+      } else {
+        return null;
+      }
     }
-  });
+  );
 };
