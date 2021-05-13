@@ -3,7 +3,7 @@ module.exports = {
     ip: "facetone-prod.2xyao.mongodb.net",
     port: "",
     dbname: "dvpdb",
-    password: "Hds7236YD",
+    password: "",
     user: "facetone",
     type: "mongodb+srv",
   },
@@ -14,7 +14,7 @@ module.exports = {
     port: 6379,
     user: "duo",
     db: 2,
-    password: "tetherfi",
+    password: "",
     sentinels: {
       hosts: "138.197.90.92,45.55.205.92,138.197.90.92",
       port: 16389,
@@ -26,7 +26,7 @@ module.exports = {
     ip: "138.197.90.92",
     port: 6389,
     user: "duo",
-    password: "DuoS123",
+    password: "",
     mode: "instance", //instance, cluster, sentinel
     sentinels: {
       hosts: "138.197.90.92,45.55.205.92,138.197.90.92",
@@ -49,7 +49,7 @@ module.exports = {
   },
 
   Services: {
-    dynamicPort: false,
+    dynamicPort: true,
     interactionurl: "interactions.app.veery.cloud", //interactions.app.veery.cloud
     interactionport: "3637",
     interactionversion: "1.0.0.0",
