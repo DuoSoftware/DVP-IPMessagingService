@@ -43,13 +43,6 @@ module.exports = {
 
     },
 
-    "SMSServer": {
-        "ip": "SYS_SMSSERVER_HOST",
-        "port": "SYS_SMSSERVER_PORT",
-        "password": "SYS_SMSSERVER_PASSWORD",
-        "user": "SYS_SMSSERVER_USER"
-    },
-
 
     "Host":
     {
@@ -58,10 +51,7 @@ module.exports = {
         "port": "HOST_IPMESSANGERSERVICE_PORT",
         "version": "HOST_VERSION",
 		"token": "HOST_TOKEN",
-        "encryptedhex": "HOST_ENCRYPTEDHEX",
-        "emailQueueName":"SYS_EMAIL_QUEUE_NAME",
-        "smsQueueName": "SYS_SMS_QUEUE_NAME",
-        "defaultMailHost": "SYS_DEFAULT_MAIL_HOST"
+        "encryptedhex": "HOST_ENCRYPTEDHEX"
     },
 
     "LBServer" : {
